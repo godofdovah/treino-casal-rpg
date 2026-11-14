@@ -375,7 +375,7 @@ function abrirBau(r) {
 }
 
 function telaLogin() {
-  return `<div class="modal" role="dialog" aria-modal="true" aria-label="Entrar"><div>
+  return `<div class="modal" role="dialog" aria-modal="true" aria-label="Entrar" style="background:#1B1630;align-items:flex-start;padding-top:calc(48px + env(safe-area-inset-top));overflow-y:auto"><div>
     <div class="row" style="gap:6px;justify-content:center"><img src="img/cleiton_corpo.png" alt="" style="width:56px;height:112px;object-fit:contain"><img src="img/larissa_corpo.png" alt="" style="width:56px;height:112px;object-fit:contain"></div>
     <h1>ENTRAR NA TAVERNA</h1>
     ${!authPronto ? '<div class="sub">Conectando…</div>' : `
