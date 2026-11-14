@@ -299,6 +299,7 @@ async function sincronizarSaude(forcar) {
   finally { saudeRodando = false; LS.set('treino_saude', saude); render(); }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizarSaude(false); });
+setInterval(() => { if (document.visibilityState === 'visible') sincronizarSaude(true); }, 120000);
 
 function painelRelogio() {
   const linha = h => {
