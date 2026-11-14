@@ -36,15 +36,10 @@ jobs:
 
       - name: Icone do app
         run: |
-          cd build/android/app/src/main/res
-          rm -rf mipmap-anydpi-v26
-          for d in mipmap-mdpi:48 mipmap-hdpi:72 mipmap-xhdpi:96 mipmap-xxhdpi:144 mipmap-xxxhdpi:192; do
-            dir=${d%%:*}; size=${d##*:}
-            mkdir -p $dir
-            rm -f $dir/ic_launcher*.png $dir/ic_launcher*.webp
-            convert ../../../../../../android-extra/icon.png -filter point -resize ${size}x${size} $dir/ic_launcher.png
-            cp $dir/ic_launcher.png $dir/ic_launcher_round.png
-          done
+          res=build/android/app/src/main/res
+          rm -rf $res/mipmap-anydpi-v26
+          rm -f $res/mipmap-*/ic_launcher*
+          cp -r android-extra/res/* $res/
 
       - name: Compilar APK
         run: |

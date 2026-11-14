@@ -5,22 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Treino do Casal — RPG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;background:#120E20;color:#F3EEDC;font-family:'Pixelify Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#120E20;color:#F3EEDC;font-family:'Nunito',system-ui,sans-serif;font-weight:600;-webkit-tap-highlight-color:transparent}
 button{font-family:inherit;color:inherit;cursor:pointer}
 img{image-rendering:pixelated;display:block}
 #app{max-width:480px;margin:0 auto;min-height:100vh;background:#1B1630;display:flex;flex-direction:column}
 main{flex:1;padding:calc(16px + env(safe-area-inset-top)) 16px 104px;display:flex;flex-direction:column;gap:14px}
-h1{margin:0;font-size:22px;color:#F2C14E;letter-spacing:.5px}
-h2{margin:0;font-size:14px;color:#B4ABC9;letter-spacing:.5px}
+h1{margin:0;font-family:'Pixelify Sans',sans-serif;font-size:24px;color:#F2C14E;letter-spacing:.5px}
+h2{margin:0;font-size:14px;font-weight:800;color:#B4ABC9;letter-spacing:.8px}
 .sub{font-size:16px;color:#B4ABC9}
 .painel{border:14px solid transparent;border-image:url(img/moldura.png) 7 fill / 14px stretch;image-rendering:pixelated}
 .card{background:#2A2245;border:4px solid #0D0B14;padding:10px 12px}
 .missao{background:#3B2A1A;border:4px solid #0D0B14;box-shadow:inset -4px -4px 0 #2A1D11,inset 4px 4px 0 #5A4128;padding:14px}
-.btn-ouro{border:10px solid transparent;border-image:url(img/botao.png) 5 fill / 10px stretch;image-rendering:pixelated;background:transparent;color:#1B1630;font-weight:700;font-size:17px;letter-spacing:.5px;min-height:56px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px}
-.btn-sec{background:#2A2245;border:4px solid #0D0B14;min-height:48px;font-weight:700;font-size:16px;padding:0 14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-ouro{border:10px solid transparent;border-image:url(img/botao.png) 5 fill / 10px stretch;image-rendering:pixelated;background:transparent;color:#1B1630;font-weight:800;font-size:17px;letter-spacing:.5px;min-height:56px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-sec{background:#2A2245;border:4px solid #0D0B14;min-height:48px;font-weight:800;font-size:16px;padding:0 14px;display:flex;align-items:center;justify-content:center;gap:8px}
 .row{display:flex;align-items:center;gap:10px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .bar{height:12px;background:#120E20;border:2px solid #0D0B14}
@@ -30,10 +30,10 @@ h2{margin:0;font-size:14px;color:#B4ABC9;letter-spacing:.5px}
 nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#120E20;border-top:4px solid #0D0B14;display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
 nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:14px;min-width:64px;min-height:48px;color:#B4ABC9}
 nav button img{width:28px;height:28px;object-fit:contain;opacity:.45;filter:grayscale(.7)}
-nav button[aria-current="page"]{color:#F2C14E;font-weight:700}
+nav button[aria-current="page"]{color:#F2C14E;font-weight:800}
 nav button[aria-current="page"] img{opacity:1;filter:none}
 .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.tab{min-height:46px;border:4px solid #0D0B14;background:#2A2245;font-weight:700;font-size:16px}
+.tab{min-height:46px;border:4px solid #0D0B14;background:#2A2245;font-weight:800;font-size:16px}
 .tab[aria-pressed="true"]{background:#F2C14E;color:#1B1630;box-shadow:inset -4px -4px 0 #C8902A}
 .ex{background:#2A2245;border:4px solid #0D0B14;padding:6px 8px;display:flex;align-items:center;gap:10px;width:100%;text-align:left}
 .ex.done{border-color:#6BD66B}
@@ -41,16 +41,16 @@ nav button[aria-current="page"] img{opacity:1;filter:none}
 .blk{display:inline-block;height:10px;border:2px solid #0D0B14;background:#120E20;margin-right:3px}
 .sets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .sets.v3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.set{min-height:48px;border:4px solid #0D0B14;background:#120E20;color:#B4ABC9;font-weight:700;font-size:20px}
+.set{min-height:48px;border:4px solid #0D0B14;background:#120E20;color:#B4ABC9;font-weight:800;font-size:20px}
 .set.aq{font-size:15px;border-style:dashed;border-color:#4A4268}
 .set.on{color:#1B1630;border-style:solid;border-color:#0D0B14}
 .set[disabled]{cursor:default}
-input.kg{width:90px;min-height:44px;background:#120E20;border:3px solid #4A4268;color:#F3EEDC;font-family:inherit;font-size:20px;font-weight:700;text-align:center}
+input.kg{width:90px;min-height:44px;background:#120E20;border:3px solid #4A4268;color:#F3EEDC;font-family:inherit;font-size:20px;font-weight:800;text-align:center}
 .aviso{background:#3A3060;border:3px solid #F2C14E;padding:8px 10px;font-size:15px}
 .modal{position:fixed;inset:0;background:rgba(13,11,20,.85);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
 .modal>div{max-width:420px;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
 .picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
-.picker button{background:#2A2245;border:4px solid #0D0B14;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:20px;font-weight:700}
+.picker button{background:#2A2245;border:4px solid #0D0B14;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:20px;font-weight:800}
 .dia{display:flex;flex-direction:column;align-items:center;gap:5px}
 .dia b{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:3px solid #0D0B14;font-size:14px}
 .dot{width:8px;height:8px;display:inline-block}
@@ -236,22 +236,22 @@ function telaTaverna() {
   const dano = danoSemana(), hp = Math.max(0, HP_CHEFAO - dano.C - dano.L);
   const herois = ['C', 'L'].map(h => { const s = stats(h); return `
     <div class="painel" style="padding:8px">
-      <div class="row">${avatar(h, 52)}<div style="min-width:0"><div style="font-weight:700;font-size:17px">${HEROI[h].nome}${h === eu ? ' <span class="mut" style="font-size:13px">(você)</span>' : ''}</div><div class="mut" style="font-size:14px">${HEROI[h].classe}</div></div></div>
-      <div class="row gold" style="justify-content:space-between;font-weight:700;font-size:14px;margin-top:8px"><span>NV ${s.nivel}</span><span>${s.xp} XP</span></div>
+      <div class="row">${avatar(h, 52)}<div style="min-width:0"><div style="font-weight:800;font-size:17px">${HEROI[h].nome}${h === eu ? ' <span class="mut" style="font-size:13px">(você)</span>' : ''}</div><div class="mut" style="font-size:14px">${HEROI[h].classe}</div></div></div>
+      <div class="row gold" style="justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px"><span>NV ${s.nivel}</span><span>${s.xp} XP</span></div>
       <div class="bar" style="margin-top:4px"><div style="width:${s.pct}%;background:#6BD66B"></div></div>
     </div>`; }).join('');
   const prog = ['C', 'L'].map(h => { const r = regDe(h, t); const n = TREINOS[t].lista.length; const f = exCount(r);
-    return `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:700;font-size:15px">${HEROI[h].nome}</span><div class="row" style="gap:4px;flex:1">${Array.from({ length: n }, (_, i) => `<span style="flex:1;height:14px;border:2px solid #0D0B14;background:${i < f ? HEROI[h].cor : (r && r.feitos[i].some(Boolean) ? '#5A4128' : '#2A1D11')}"></span>`).join('')}</div><span style="font-weight:700;font-size:14px;width:30px;text-align:right">${f}/${n}</span></div>`; }).join('');
+    return `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:800;font-size:15px">${HEROI[h].nome}</span><div class="row" style="gap:4px;flex:1">${Array.from({ length: n }, (_, i) => `<span style="flex:1;height:14px;border:2px solid #0D0B14;background:${i < f ? HEROI[h].cor : (r && r.feitos[i].some(Boolean) ? '#5A4128' : '#2A1D11')}"></span>`).join('')}</div><span style="font-weight:800;font-size:14px;width:30px;text-align:right">${f}/${n}</span></div>`; }).join('');
   return `
   <div class="row" style="justify-content:space-between">
     <div><div class="sub">${esc(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}</div><h1>TAVERNA</h1></div>
-    <button class="card" data-go="chefao" style="padding:6px 8px;border-color:#E5484D;display:flex;align-items:center;gap:8px"><img src="img/golem.png" alt="" style="width:40px;height:34px;object-fit:contain"><div style="text-align:left"><div style="font-weight:700;font-size:13px;color:#FF7B7B">CHEFÃO ${hp} HP</div><div class="bar" style="width:84px;height:8px;margin-top:4px"><div style="width:${hp / HP_CHEFAO * 100}%;background:#E5484D"></div></div></div></button>
+    <button class="card" data-go="chefao" style="padding:6px 8px;border-color:#E5484D;display:flex;align-items:center;gap:8px"><img src="img/golem.png" alt="" style="width:40px;height:34px;object-fit:contain"><div style="text-align:left"><div style="font-weight:800;font-size:13px;color:#FF7B7B">CHEFÃO ${hp} HP</div><div class="bar" style="width:84px;height:8px;margin-top:4px"><div style="width:${hp / HP_CHEFAO * 100}%;background:#E5484D"></div></div></div></button>
   </div>
   <div class="grid2">${herois}</div>
   <div class="missao" style="display:flex;flex-direction:column;gap:12px">
-    <div class="row" style="justify-content:space-between"><span class="gold" style="font-weight:700;font-size:15px">MISSÃO DO DIA</span><span class="ok row" style="gap:4px;font-weight:700;font-size:14px"><img src="img/estrela.png" alt="" style="width:16px;height:16px">até ${totalSets(t) * 10 + 50} XP</span></div>
-    <div class="row"><div style="width:56px;height:56px;background:#F2C14E;border:4px solid #0D0B14;color:#1B1630;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700">${t}</div>
-      <div><div style="font-weight:700;font-size:22px">Treino ${t}</div><div style="font-size:16px;color:#E4D3B5">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios</div></div></div>
+    <div class="row" style="justify-content:space-between"><span class="gold" style="font-weight:800;font-size:15px">MISSÃO DO DIA</span><span class="ok row" style="gap:4px;font-weight:800;font-size:14px"><img src="img/estrela.png" alt="" style="width:16px;height:16px">até ${totalSets(t) * 10 + 50} XP</span></div>
+    <div class="row"><div style="width:56px;height:56px;background:#F2C14E;border:4px solid #0D0B14;color:#1B1630;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800">${t}</div>
+      <div><div style="font-weight:800;font-size:22px">Treino ${t}</div><div style="font-size:16px;color:#E4D3B5">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios</div></div></div>
     <div style="display:flex;flex-direction:column;gap:6px">${prog}</div>
     <button class="btn-ouro" data-go="missoes" data-treino="${t}">INICIAR MISSÃO</button>
   </div>
@@ -269,9 +269,9 @@ function telaMissoes() {
     return `<button class="ex${done ? ' done' : ''}" data-ex="${i}">
       <div class="thumb">${img ? `<img src="${img}" alt="" style="width:44px;height:44px;object-fit:contain">` : `<img src="img/ic_missoes.png" alt="" style="width:14px;height:32px;opacity:.4">`}</div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-        <div class="row" style="justify-content:space-between;gap:6px"><span style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</span><span class="gold" style="font-weight:700;font-size:14px;white-space:nowrap">${nAq(i) ? '2 AQ + ' : ''}3×${REPS}</span></div>
+        <div class="row" style="justify-content:space-between;gap:6px"><span style="font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</span><span class="gold" style="font-weight:800;font-size:14px;white-space:nowrap">${nAq(i) ? '2 AQ + ' : ''}3×${REPS}</span></div>
         <span class="mut" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${obs}</span>
-        <div class="row" style="gap:4px"><span class="cC" style="font-size:12px;font-weight:700">C</span>${blocos(rC, i, 'C')}<span class="cL" style="font-size:12px;font-weight:700;margin-left:6px">L</span>${blocos(rL, i, 'L')}</div>
+        <div class="row" style="gap:4px"><span class="cC" style="font-size:12px;font-weight:800">C</span>${blocos(rC, i, 'C')}<span class="cL" style="font-size:12px;font-weight:800;margin-left:6px">L</span>${blocos(rL, i, 'L')}</div>
       </div></button>`;
   }).join('');
   return `
@@ -290,21 +290,21 @@ function telaDesafio() {
     const btns = a.map((on, k) => { const ehAq = k < aq; const label = ehAq ? 'AQ' : (k - aq + 1);
       return `<button class="set${ehAq ? ' aq' : ''}${on ? ' on' : ''}" ${editavel ? `data-set="${k}"` : 'disabled'} aria-pressed="${on}" aria-label="${ehAq ? 'Aquecimento ' + (k + 1) : 'Série válida ' + (k - aq + 1)} de ${HEROI[h].nome}" style="${on ? `background:${ehAq ? HEROI[h].claro : HEROI[h].cor};${ehAq ? '' : `box-shadow:inset -4px -4px 0 ${HEROI[h].sombra};`}` : ''}${editavel ? '' : 'min-height:34px;font-size:14px;'}">${label}</button>`; }).join('');
     return `<div class="card" style="display:flex;flex-direction:column;gap:8px;${editavel ? '' : 'opacity:.85'}">
-      <div class="row" style="justify-content:space-between">${`<span class="row" style="gap:8px">${avatar(h, 36)}<span class="${HEROI[h].css}" style="font-weight:700;font-size:17px">${HEROI[h].nome}${editavel ? '' : ' <span class="mut" style="font-size:13px">(só vê)</span>'}</span></span>`}
-      <span style="font-weight:700;font-size:14px" class="${f === a.length ? 'ok' : 'mut'}">${f === a.length ? 'VENCIDO!' : f + '/' + a.length}</span></div>
+      <div class="row" style="justify-content:space-between">${`<span class="row" style="gap:8px">${avatar(h, 36)}<span class="${HEROI[h].css}" style="font-weight:800;font-size:17px">${HEROI[h].nome}${editavel ? '' : ' <span class="mut" style="font-size:13px">(só vê)</span>'}</span></span>`}
+      <span style="font-weight:800;font-size:14px" class="${f === a.length ? 'ok' : 'mut'}">${f === a.length ? 'VENCIDO!' : f + '/' + a.length}</span></div>
       ${aq ? `<div class="sets" style="margin-bottom:-2px"><span style="grid-column:span 2;font-size:13px" class="mut">AQUECIMENTO</span><span style="grid-column:span 3;font-size:13px" class="gold">VÁLIDAS</span></div>` : ''}
       <div class="sets${aq ? '' : ' v3'}">${btns}</div></div>`;
   };
   return `
   <div class="row" style="justify-content:space-between">
     <button class="btn-sec" data-go="missoes" aria-label="Voltar" style="width:48px;padding:0"><img src="img/seta_esq.png" alt="" style="width:22px;height:18px"></button>
-    <span style="background:#F2C14E;color:#1B1630;border:3px solid #0D0B14;font-weight:700;font-size:14px;padding:6px 8px">DESAFIO ${i + 1}/${lista.length} · TREINO ${t}</span>
+    <span style="background:#F2C14E;color:#1B1630;border:3px solid #0D0B14;font-weight:800;font-size:14px;padding:6px 8px">DESAFIO ${i + 1}/${lista.length} · TREINO ${t}</span>
   </div>
   <div style="background:#120E20;border:4px solid #0D0B14;height:220px;display:flex;align-items:center;justify-content:center">${img ? `<img src="${img}" alt="${HEROI[eu].nome} fazendo ${nome}" style="max-width:96%;max-height:206px;object-fit:contain">` : `<span class="mut" style="font-size:16px">Arte em breve</span>`}</div>
   <div><h1>${nome.toUpperCase()}</h1><div class="sub">${obs}</div></div>
   <div class="grid2">
-    ${aq ? `<div class="painel" style="padding:6px 8px"><div style="font-weight:700;font-size:24px" class="mut">2 <span style="font-size:15px">aquecimento</span></div><div style="font-size:15px">${AQ_REPS} reps · 50% da carga</div></div>` : ''}
-    <div class="painel" style="padding:6px 8px;${aq ? '' : 'grid-column:span 2'}"><div style="font-weight:700;font-size:24px" class="gold">3 <span style="font-size:15px">válidas</span></div><div style="font-size:15px">${REPS} reps · carga máxima</div></div>
+    ${aq ? `<div class="painel" style="padding:6px 8px"><div style="font-weight:800;font-size:24px" class="mut">2 <span style="font-size:15px">aquecimento</span></div><div style="font-size:15px">${AQ_REPS} reps · 50% da carga</div></div>` : ''}
+    <div class="painel" style="padding:6px 8px;${aq ? '' : 'grid-column:span 2'}"><div style="font-weight:800;font-size:24px" class="gold">3 <span style="font-size:15px">válidas</span></div><div style="font-size:15px">${REPS} reps · carga máxima</div></div>
   </div>
   <div class="card row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
     <label class="row" style="gap:8px;font-size:16px">Sua carga <input class="kg" id="kg" inputmode="decimal" value="${kg ? kgFmt(kg) : ''}" placeholder="kg" aria-label="Sua carga em kg"> kg</label>
@@ -329,13 +329,13 @@ function telaDiario() {
   const lista = Object.values(porDia).sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 12).map(x => {
     const tag = h => { const r = x[h]; const n = TREINOS[x.treino].lista.length; const f = exCount(r);
       const st = !r ? 'background:#120E20;color:#8F88A6' : f === n ? `background:${HEROI[h].cor};color:#1B1630` : `background:#120E20;color:${HEROI[h].cor}`;
-      return `<span style="font-weight:700;font-size:13px;padding:5px 6px;border:2px solid #0D0B14;${st}">${h} ${!r ? '—' : f === n ? 'OK' : f + '/' + n}</span>`; };
-    return `<div class="card row" style="padding:8px 10px"><div style="flex:1"><div style="font-weight:700;font-size:16px">Treino ${x.treino} · ${TREINOS[x.treino].grupo}</div><div class="mut" style="font-size:14px">${dataBonita(x.data)}</div></div>${tag('C')}${tag('L')}</div>`;
+      return `<span style="font-weight:800;font-size:13px;padding:5px 6px;border:2px solid #0D0B14;${st}">${h} ${!r ? '—' : f === n ? 'OK' : f + '/' + n}</span>`; };
+    return `<div class="card row" style="padding:8px 10px"><div style="flex:1"><div style="font-weight:800;font-size:16px">Treino ${x.treino} · ${TREINOS[x.treino].grupo}</div><div class="mut" style="font-size:14px">${dataBonita(x.data)}</div></div>${tag('C')}${tag('L')}</div>`;
   }).join('') || `<div class="card mut" style="font-size:16px">Nenhuma missão registrada ainda. Marque as séries no treino de hoje.</div>`;
   const combo = comboJuntos();
   return `
   <div><div class="sub">Esta semana</div><h1>DIÁRIO DE AVENTURA</h1></div>
-  <div class="missao row"><img src="img/chama.png" alt="" style="width:36px;height:44px;object-fit:contain"><div><div class="gold" style="font-weight:700;font-size:18px">COMBO x${combo}</div><div style="font-size:16px">${combo === 1 ? '1 dia' : combo + ' dias'} seguidos treinando em dupla</div></div></div>
+  <div class="missao row"><img src="img/chama.png" alt="" style="width:36px;height:44px;object-fit:contain"><div><div class="gold" style="font-weight:800;font-size:18px">COMBO x${combo}</div><div style="font-size:16px">${combo === 1 ? '1 dia' : combo + ' dias'} seguidos treinando em dupla</div></div></div>
   <div class="card" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:10px 6px">${dias}</div>
   <h2>REGISTROS</h2>
   <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>`;
@@ -350,13 +350,13 @@ function telaChefao() {
   <div><h1>CHEFÃO DA SEMANA</h1><div class="sub">${hp === 0 ? 'Derrotado! Vocês venceram esta semana.' : falta === 0 ? 'Último dia para derrotar' : falta === 1 ? 'Falta 1 dia para derrotar' : 'Faltam ' + falta + ' dias para derrotar'}</div></div>
   <div class="painel" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px">
     <img src="img/golem.png" alt="Golem da Preguiça" style="width:200px;height:164px;object-fit:contain;${hp === 0 ? 'filter:grayscale(1);opacity:.5' : ''}">
-    <span style="font-weight:700;font-size:18px">GOLEM DA PREGUIÇA</span>
-    <div style="width:100%"><div class="row" style="justify-content:space-between;font-weight:700;font-size:14px"><span class="row" style="gap:6px;color:#FF7B7B"><img src="img/coracao.png" alt="" style="width:16px;height:14px">HP</span><span>${hp} / ${HP_CHEFAO}</span></div>
+    <span style="font-weight:800;font-size:18px">GOLEM DA PREGUIÇA</span>
+    <div style="width:100%"><div class="row" style="justify-content:space-between;font-weight:800;font-size:14px"><span class="row" style="gap:6px;color:#FF7B7B"><img src="img/coracao.png" alt="" style="width:16px;height:14px">HP</span><span>${hp} / ${HP_CHEFAO}</span></div>
     <div class="bar" style="height:18px;margin-top:4px"><div style="width:${hp / HP_CHEFAO * 100}%;background:#E5484D;box-shadow:inset 0 -6px 0 #A52A2E"></div></div></div>
     <span class="mut" style="font-size:15px">Cada série válida = 1 de dano</span>
   </div>
   <h2>DANO DO GRUPO</h2>
-  <div class="card" style="display:flex;flex-direction:column;gap:10px">${['C', 'L'].map(h => `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:700;font-size:16px">${HEROI[h].nome}</span><div class="bar" style="flex:1;height:14px"><div style="width:${d[h] / max * 100}%;background:${HEROI[h].cor}"></div></div><span style="font-weight:700;font-size:15px;width:32px;text-align:right">${d[h]}</span></div>`).join('')}</div>`;
+  <div class="card" style="display:flex;flex-direction:column;gap:10px">${['C', 'L'].map(h => `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:800;font-size:16px">${HEROI[h].nome}</span><div class="bar" style="flex:1;height:14px"><div style="width:${d[h] / max * 100}%;background:${HEROI[h].cor}"></div></div><span style="font-weight:800;font-size:15px;width:32px;text-align:right">${d[h]}</span></div>`).join('')}</div>`;
 }
 
 function abrirBau(r) {
