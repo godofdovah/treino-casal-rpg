@@ -283,7 +283,13 @@ async function sincronizarSaude(forcar) {
     const q = { startDate: ini.toISOString(), endDate: fim.toISOString() };
     const dias = {};
     for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, kcalTotais: 0, treinos: [] }; }
-    const agg = async tipo => { try { const r = await Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, q)); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
+    // lê tudo e só o Samsung Health; fica com o maior valor de cada dia
+    const agg1 = async (tipo, origem) => { try { const r = await Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, origem ? { dataOrigins: origem } : {}, q)); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
+    const agg = async tipo => {
+      const [todos, samsung] = await Promise.all([agg1(tipo), agg1(tipo, ['com.sec.android.app.shealth'])]);
+      const m = {}; [...todos, ...samsung].forEach(a => { const k = ymd(new Date(a.startDate)); m[k] = Math.max(m[k] || 0, a.value || 0); });
+      return Object.entries(m).map(([k, v]) => ({ startDate: k + 'T12:00:00', value: v }));
+    };
     (await agg('steps')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].passos += a.value || 0; });
     (await agg('active-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalAtivas += a.value || 0; });
     (await agg('total-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalTotais += a.value || 0; });
