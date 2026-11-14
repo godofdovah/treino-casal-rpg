@@ -32,3 +32,23 @@ v = var.read_text()
 v = re.sub(r'minSdkVersion\s*=\s*\d+', 'minSdkVersion = 26', v)
 var.write_text(v)
 print(s); print(v)
+
+# assinatura fixa: toda versão nova instala por cima da anterior
+import shutil
+app = root / 'app'
+shutil.copy(pathlib.Path(__file__).parent / 'debug.keystore', app / 'treino.keystore')
+g = app / 'build.gradle'
+t = g.read_text()
+assin = '''android {
+    signingConfigs {
+        debug {
+            storeFile file('treino.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+'''
+t = t.replace('android {', assin, 1)
+g.write_text(t)
+print(t[:600])

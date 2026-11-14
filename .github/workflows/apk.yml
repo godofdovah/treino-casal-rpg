@@ -45,12 +45,11 @@ jobs:
 
       - name: Compilar APK
         run: |
-          mkdir -p ~/.android
-          cp android-extra/debug.keystore ~/.android/debug.keystore
           cd build/android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk ../../treino-rpg.apk
+          keytool -printcert -jarfile ../../treino-rpg.apk | grep -i sha256 | head -1 || true
 
       - name: Publicar para download
         env:
