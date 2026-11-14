@@ -147,7 +147,7 @@ function limparReg(id, d) {
     const a = d.feitos && Array.isArray(d.feitos[i]) ? d.feitos[i] : [];
     feitos[i] = Array.from({ length: nSets(i) }, (_, k) => a[k] === true);
   }
-  return { data: d.data, heroi: d.heroi, treino: d.treino, feitos, atualizado: Number(d.atualizado) || 0 };
+  return { data: d.data, heroi: d.heroi, treino: d.treino, feitos, cardio: d.cardio === true, atualizado: Number(d.atualizado) || 0 };
 }
 for (const k of Object.keys(regs)) { const r = limparReg(k, regs[k]); if (r) regs[k] = r; else delete regs[k]; }
 
@@ -158,11 +158,20 @@ const marcas = r => (r ? Object.values(r.feitos).reduce((s, a) => s + a.filter(B
 const totalSets = t => TREINOS[t].lista.reduce((s, _, i) => s + nSets(i), 0);
 const exFeito = (r, i) => !!(r && r.feitos[i] && r.feitos[i].every(Boolean));
 const exCount = r => (r ? TREINOS[r.treino].lista.filter((_, i) => exFeito(r, i)).length : 0);
-const completo = r => !!r && exCount(r) === TREINOS[r.treino].lista.length;
+// cardio de 20 min nos treinos A e B (dia de perna não tem)
+const CARDIO_EM = { A: true, B: true, C: false }, CARDIO_MIN = 20;
+const TIPOS_CARDIO = ['Caminhada', 'Esteira', 'Corrida', 'Bike', 'Bike ergométrica', 'Elíptico', 'Escada', 'HIIT', 'Trilha'];
+function cardioRelogio(h, data) {
+  const r = typeof saude !== 'undefined' ? saude[(data || hoje()) + '_' + h] : null;
+  return r ? r.treinos.find(t => TIPOS_CARDIO.includes(t.tipo) && t.min >= 15) || null : null;
+}
+const cardioFeito = (h, t, data) => { const r = regDe(h, t, data); return !!(r && r.cardio) || !!cardioRelogio(h, data); };
+const completo = r => !!r && exCount(r) === TREINOS[r.treino].lista.length && (!CARDIO_EM[r.treino] || cardioFeito(r.heroi, r.treino, r.data));
 
 function xpDe(r) {
   let xp = 0;
   Object.entries(r.feitos).forEach(([i, a]) => a.forEach((on, k) => { if (on) xp += k < nAq(+i) ? 5 : 10; }));
+  if (CARDIO_EM[r.treino] && cardioFeito(r.heroi, r.treino, r.data)) xp += 20;
   if (completo(r)) xp += 50;
   return xp;
 }
@@ -324,6 +333,27 @@ function semanaRelogio() {
   return `<h2>RELÓGIO NA SEMANA</h2><div class="card" style="display:flex;flex-direction:column;gap:8px">${['C', 'L'].map(h => `<div class="row" style="justify-content:space-between;font-size:15px"><span class="${HEROI[h].css}" style="font-weight:800;width:70px">${HEROI[h].nome}</span><span>${t[h].n} treinos · <b class="gold">${t[h].kcal.toLocaleString('pt-BR')} kcal</b> · ${kmFmt(t[h].m)} km</span></div>`).join('')}</div>`;
 }
 
+function marcarCardio(t) {
+  if (!eu) return;
+  const id = idReg(hoje(), eu, t);
+  const r = regs[id] || novoReg(eu, t);
+  r.cardio = !r.cardio; r.atualizado = Date.now();
+  regs[id] = r; salvar(id);
+  if (completo(r) && !celebrou[id]) { celebrou[id] = true; LS.set('treino_celebrou', celebrou); render(); abrirBau(r); return; }
+  render();
+}
+function blocoCardio(t) {
+  if (!CARDIO_EM[t]) return `<div class="card mut" style="font-size:15px">Dia de perna: sem cardio hoje.</div>`;
+  const linha = h => {
+    const r = regDe(h, t); const rel = cardioRelogio(h); const ok = !!(r && r.cardio) || !!rel;
+    const info = rel ? `pelo relógio: ${esc(rel.tipo)} ${rel.min} min · ${rel.kcal} kcal` : (r && r.cardio ? 'marcado' : 'falta');
+    const btn = h === eu && !rel ? `<button class="set${r && r.cardio ? ' on' : ''}" data-cardio style="min-height:42px;padding:0 12px;font-size:15px;${r && r.cardio ? `background:${HEROI[h].cor};box-shadow:inset -4px -4px 0 ${HEROI[h].sombra};` : ''}">${r && r.cardio ? 'FEITO' : 'MARCAR'}</button>` : `<span style="font-weight:800;font-size:14px" class="${ok ? 'ok' : 'mut'}">${ok ? 'FEITO' : '—'}</span>`;
+    return `<div class="row" style="justify-content:space-between;gap:8px"><div><div class="${HEROI[h].css}" style="font-weight:800;font-size:16px">${HEROI[h].nome}</div><div class="mut" style="font-size:13px">${info}</div></div>${btn}</div>`;
+  };
+  return `<div class="missao" style="display:flex;flex-direction:column;gap:10px"><div class="row" style="justify-content:space-between"><span class="gold" style="font-weight:800;font-size:16px">CARDIO · ${CARDIO_MIN} MIN</span><span class="ok" style="font-weight:800;font-size:14px">+20 XP</span></div>
+    <div style="font-size:13px;color:#E4D3B5">Esteira, bike, escada ou caminhada. Se o relógio registrar, marca sozinho.</div>${linha(eu)}${linha(outro(eu))}</div>`;
+}
+
 function marcar(t, i, k) {
   if (!eu) return;
   const id = idReg(hoje(), eu, t);
@@ -360,9 +390,9 @@ function telaTaverna() {
   </div>
   <div class="grid2">${herois}</div>
   <div class="missao" style="display:flex;flex-direction:column;gap:12px">
-    <div class="row" style="justify-content:space-between"><span class="gold" style="font-weight:800;font-size:15px">MISSÃO DO DIA</span><span class="ok row" style="gap:4px;font-weight:800;font-size:14px"><img src="img/estrela.png" alt="" style="width:16px;height:16px">até ${totalSets(t) * 10 + 50} XP</span></div>
+    <div class="row" style="justify-content:space-between"><span class="gold" style="font-weight:800;font-size:15px">MISSÃO DO DIA</span><span class="ok row" style="gap:4px;font-weight:800;font-size:14px"><img src="img/estrela.png" alt="" style="width:16px;height:16px">até ${totalSets(t) * 10 + 50 + (CARDIO_EM[t] ? 20 : 0)} XP</span></div>
     <div class="row"><div style="width:56px;height:56px;background:#F2C14E;border:4px solid #0D0B14;color:#1B1630;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800">${t}</div>
-      <div><div style="font-weight:800;font-size:22px">Treino ${t}</div><div style="font-size:16px;color:#E4D3B5">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios</div></div></div>
+      <div><div style="font-weight:800;font-size:22px">Treino ${t}</div><div style="font-size:16px;color:#E4D3B5">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios${CARDIO_EM[t] ? ' + cardio' : ''}</div></div></div>
     <div style="display:flex;flex-direction:column;gap:6px">${prog}</div>
     <button class="btn-ouro" data-go="missoes" data-treino="${t}">INICIAR MISSÃO</button>
   </div>
@@ -387,9 +417,10 @@ function telaMissoes() {
       </div></button>`;
   }).join('');
   return `
-  <div><h1>MISSÃO: TREINO ${t}</h1><div class="sub">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios · 1º com aquecimento</div></div>
+  <div><h1>MISSÃO: TREINO ${t}</h1><div class="sub">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios · 1º com aquecimento${CARDIO_EM[t] ? ' · cardio ' + CARDIO_MIN + ' min' : ''}</div></div>
   <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
-  <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>`;
+  <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>
+  ${blocoCardio(t)}`;
 }
 
 function telaDesafio() {
@@ -532,6 +563,7 @@ document.addEventListener('click', e => {
   const ds = b.dataset;
   if ('esqueci' in ds) { esqueciSenha(); return; }
   if ('relogio' in ds) { conectarRelogio(); return; }
+  if ('cardio' in ds) { marcarCardio(tabTreino || treinoSugerido()); return; }
   if ('relogioSync' in ds) { sincronizarSaude(true); return; }
   if ('sair' in ds) { if (fb) fb.signOut(fb.auth); return; }
   if (ds.treinoSel) { tabTreino = ds.treinoSel; render(); return; }
