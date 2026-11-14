@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Treino do Casal — RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#120E20;color:#F3EEDC;font-family:'Pixelify Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit;cursor:pointer}
+img{image-rendering:pixelated;display:block}
+#app{max-width:480px;margin:0 auto;min-height:100vh;background:#1B1630;display:flex;flex-direction:column}
+main{flex:1;padding:calc(16px + env(safe-area-inset-top)) 16px 104px;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:22px;color:#F2C14E;letter-spacing:.5px}
+h2{margin:0;font-size:14px;color:#B4ABC9;letter-spacing:.5px}
+.sub{font-size:16px;color:#B4ABC9}
+.painel{border:14px solid transparent;border-image:url(img/moldura.png) 7 fill / 14px stretch;image-rendering:pixelated}
+.card{background:#2A2245;border:4px solid #0D0B14;padding:10px 12px}
+.missao{background:#3B2A1A;border:4px solid #0D0B14;box-shadow:inset -4px -4px 0 #2A1D11,inset 4px 4px 0 #5A4128;padding:14px}
+.btn-ouro{border:10px solid transparent;border-image:url(img/botao.png) 5 fill / 10px stretch;image-rendering:pixelated;background:transparent;color:#1B1630;font-weight:700;font-size:17px;letter-spacing:.5px;min-height:56px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-sec{background:#2A2245;border:4px solid #0D0B14;min-height:48px;font-weight:700;font-size:16px;padding:0 14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.row{display:flex;align-items:center;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.bar{height:12px;background:#120E20;border:2px solid #0D0B14}
+.bar>div{height:100%}
+.av{background:#120E20;border:3px solid;overflow:hidden;flex-shrink:0}
+.cC{color:#6EA0FF}.cL{color:#FF9A52}.gold{color:#F2C14E}.ok{color:#6BD66B}.mut{color:#B4ABC9}
+nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#120E20;border-top:4px solid #0D0B14;display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
+nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:14px;min-width:64px;min-height:48px;color:#B4ABC9}
+nav button img{width:28px;height:28px;object-fit:contain;opacity:.45;filter:grayscale(.7)}
+nav button[aria-current="page"]{color:#F2C14E;font-weight:700}
+nav button[aria-current="page"] img{opacity:1;filter:none}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tab{min-height:46px;border:4px solid #0D0B14;background:#2A2245;font-weight:700;font-size:16px}
+.tab[aria-pressed="true"]{background:#F2C14E;color:#1B1630;box-shadow:inset -4px -4px 0 #C8902A}
+.ex{background:#2A2245;border:4px solid #0D0B14;padding:6px 8px;display:flex;align-items:center;gap:10px;width:100%;text-align:left}
+.ex.done{border-color:#6BD66B}
+.thumb{width:50px;height:50px;background:#120E20;border:3px solid #0D0B14;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.blk{display:inline-block;height:10px;border:2px solid #0D0B14;background:#120E20;margin-right:3px}
+.sets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.sets.v3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.set{min-height:48px;border:4px solid #0D0B14;background:#120E20;color:#B4ABC9;font-weight:700;font-size:20px}
+.set.aq{font-size:15px;border-style:dashed;border-color:#4A4268}
+.set.on{color:#1B1630;border-style:solid;border-color:#0D0B14}
+.set[disabled]{cursor:default}
+input.kg{width:90px;min-height:44px;background:#120E20;border:3px solid #4A4268;color:#F3EEDC;font-family:inherit;font-size:20px;font-weight:700;text-align:center}
+.aviso{background:#3A3060;border:3px solid #F2C14E;padding:8px 10px;font-size:15px}
+.modal{position:fixed;inset:0;background:rgba(13,11,20,.85);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal>div{max-width:420px;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+.picker button{background:#2A2245;border:4px solid #0D0B14;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:20px;font-weight:700}
+.dia{display:flex;flex-direction:column;align-items:center;gap:5px}
+.dia b{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:3px solid #0D0B14;font-size:14px}
+.dot{width:8px;height:8px;display:inline-block}
+.campo{width:100%;min-height:50px;background:#120E20;border:3px solid #4A4268;color:#F3EEDC;font-family:inherit;font-size:18px;padding:0 12px}
+.campo:focus{outline:none;border-color:#F2C14E}
+.login{width:100%;display:flex;flex-direction:column;gap:10px;text-align:left}
+.login label{font-size:15px;color:#B4ABC9}
+</style>
+</head>
+<body>
+<div id="app"><main id="main" aria-live="polite"></main></div>
+<nav id="nav" aria-label="Menu"></nav>
+<div id="modal"></div>
+<script>
+'use strict';
+// ---------- dados fixos do treino ----------
+const TREINOS = {
+  A: { grupo: 'Peito', lista: [
+    ['Crucifixo', 'máquina'], ['Supino reto', 'barra livre'], ['Supino inclinado', 'halteres'],
+    ['Desenvolvimento', 'livre ou máquina'], ['Elevação lateral', 'halteres'],
+    ['Tríceps na polia', 'barra W'], ['Tríceps francês', 'corda na polia']] },
+  B: { grupo: 'Costas', lista: [
+    ['Puxada alta', 'polia · triângulo anatômico'], ['Puxada baixa', 'barra anatômica ou reta'],
+    ['Serrote', 'halter · em pé, mão apoiada'], ['Bíceps martelo', 'halteres'],
+    ['Bíceps na polia', 'barra W ou rosca Scott'], ['Antebraço', 'barra reta na polia · pegada neutra']] },
+  C: { grupo: 'Perna completa', lista: [
+    ['Levantamento terra', 'barra'], ['Hack', 'agachamento'], ['Cadeira extensora', 'máquina'],
+    ['Mesa flexora', 'máquina · sentado'], ['Elevação pélvica', 'barra ou máquina'], ['Panturrilha', 'no hack']] }
+};
+const ARTE = {
+  C: { A: ['c_a1_crucifixo','c_a2_supino_reto','c_a3_supino_incl','c_a4_desenvolvimento','c_a5_elevacao','c_a6_triceps_polia','c_a7_triceps_frances'],
+       B: ['c_b1_puxada_alta','c_b2_puxada_baixa','c_b3_serrote','c_b4_martelo','c_b5_biceps_polia','c_b6_antebraco_v2'],
+       C: ['c_c1_terra','c_c2_hack_v2','c_c3_extensora','c_c4_flexora','c_c5_pelvica','c_c6_panturrilha'] },
+  L: { A: ['l_a1_crucifixo','l_a2_supino_reto','l_a3_supino_incl','l_a4_desenvolvimento','l_a5_elevacao','l_a6_triceps_polia','l_a7_triceps_frances'],
+       B: ['l_b1_puxada_alta','l_b2_puxada_baixa','l_b3_serrote','l_b4_martelo','l_b5_biceps_polia','l_b6_antebraco'],
+       C: ['l_c1_terra','l_c2_hack','l_c3_extensora','l_c4_flexora','l_c5_pelvica','l_c6_panturrilha'] }
+};
+const HEROI = {
+  C: { nome: 'Cleiton', classe: 'Guerreiro', cor: '#6EA0FF', sombra: '#2F5FD0', claro: '#B9CFFF', css: 'cC' },
+  L: { nome: 'Larissa', classe: 'Paladina', cor: '#FF9A52', sombra: '#C25A1C', claro: '#FFCFA8', css: 'cL' }
+};
+const AQ_REPS = 12, REPS = 8, VALIDAS = 3, HP_CHEFAO = 150, XP_NIVEL = 500;
+const nAq = i => (i === 0 ? 2 : 0);
+const nSets = i => nAq(i) + VALIDAS;
+const arte = (h, t, i) => { const a = ARTE[h] && ARTE[h][t] && ARTE[h][t][i]; return a ? 'img/' + a + '.png' : ''; };
+const outro = h => (h === 'C' ? 'L' : 'C');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- datas ----------
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const hoje = () => ymd(new Date());
+function inicioSemana() { const d = new Date(); const w = (d.getDay() + 6) % 7; d.setDate(d.getDate() - w); d.setHours(0, 0, 0, 0); return d; }
+const DIAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+function dataBonita(s) {
+  if (s === hoje()) return 'Hoje';
+  const [y, m, d] = s.split('-').map(Number); const dt = new Date(y, m - 1, d);
+  return ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getDay()] + ', ' + pad(d) + '/' + pad(m);
+}
+
+// ---------- armazenamento local (reserva) ----------
+const LS = {
+  get(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+// ---------- estado ----------
+// ---------- Firebase ----------
+const FB_CONFIG = {
+  apiKey: 'AIzaSyC-IulJZOvILepsfxbLvEkIm0QzHnbw3jM',
+  authDomain: 'treino-casal-rpg.firebaseapp.com',
+  projectId: 'treino-casal-rpg',
+  storageBucket: 'treino-casal-rpg.firebasestorage.app',
+  messagingSenderId: '526983877725',
+  appId: '1:526983877725:web:4500b600c89e98bda369b4'
+};
+const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
+const FB_V = '10.14.1';
+let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
+let eu = null;
+let regs = LS.get('treino_regs', {});
+let cargas = LS.get('treino_cargas', { C: {}, L: {} });
+let db = null, modo = 'carregando', semPermissao = false;
+let tela = 'taverna', tabTreino = null, exAtual = 0, celebrou = LS.get('treino_celebrou', {});
+
+function limparReg(id, d) {
+  if (!d || typeof d !== 'object') return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || !HEROI[d.heroi] || !TREINOS[d.treino]) return null;
+  const feitos = {};
+  const n = TREINOS[d.treino].lista.length;
+  for (let i = 0; i < n; i++) {
+    const a = d.feitos && Array.isArray(d.feitos[i]) ? d.feitos[i] : [];
+    feitos[i] = Array.from({ length: nSets(i) }, (_, k) => a[k] === true);
+  }
+  return { data: d.data, heroi: d.heroi, treino: d.treino, feitos, atualizado: Number(d.atualizado) || 0 };
+}
+for (const k of Object.keys(regs)) { const r = limparReg(k, regs[k]); if (r) regs[k] = r; else delete regs[k]; }
+
+const idReg = (data, h, t) => data + '_' + h + '_' + t;
+function regDe(h, t, data) { return regs[idReg(data || hoje(), h, t)] || null; }
+function novoReg(h, t) { const r = limparReg('', { data: hoje(), heroi: h, treino: t, feitos: {} }); return r; }
+const marcas = r => (r ? Object.values(r.feitos).reduce((s, a) => s + a.filter(Boolean).length, 0) : 0);
+const totalSets = t => TREINOS[t].lista.reduce((s, _, i) => s + nSets(i), 0);
+const exFeito = (r, i) => !!(r && r.feitos[i] && r.feitos[i].every(Boolean));
+const exCount = r => (r ? TREINOS[r.treino].lista.filter((_, i) => exFeito(r, i)).length : 0);
+const completo = r => !!r && exCount(r) === TREINOS[r.treino].lista.length;
+
+function xpDe(r) {
+  let xp = 0;
+  Object.entries(r.feitos).forEach(([i, a]) => a.forEach((on, k) => { if (on) xp += k < nAq(+i) ? 5 : 10; }));
+  if (completo(r)) xp += 50;
+  return xp;
+}
+function stats(h) {
+  const xp = Object.values(regs).filter(r => r.heroi === h).reduce((s, r) => s + xpDe(r), 0);
+  return { xp, nivel: Math.floor(xp / XP_NIVEL) + 1, pct: Math.round((xp % XP_NIVEL) / XP_NIVEL * 100) };
+}
+function treinoSugerido() {
+  const de = h => Object.values(regs).filter(r => r.heroi === h && r.data === hoje() && marcas(r) > 0).sort((a, b) => marcas(b) - marcas(a))[0];
+  const meu = eu && de(eu); if (meu) return meu.treino;
+  const dela = eu && de(outro(eu)); if (dela) return dela.treino;
+  const ult = Object.values(regs).filter(r => r.heroi === eu && marcas(r) > 0 && r.data < hoje()).sort((a, b) => (a.data < b.data ? 1 : -1))[0];
+  return ult ? { A: 'B', B: 'C', C: 'A' }[ult.treino] : 'A';
+}
+function danoSemana() {
+  const ini = ymd(inicioSemana()); const d = { C: 0, L: 0 };
+  Object.values(regs).forEach(r => { if (r.data >= ini) Object.entries(r.feitos).forEach(([i, a]) => a.forEach((on, k) => { if (on && k >= nAq(+i)) d[r.heroi]++; })); });
+  return d;
+}
+function treinouNoDia(h, data) { return Object.values(regs).some(r => r.heroi === h && r.data === data && marcas(r) > 0); }
+function comboJuntos() {
+  let n = 0; const d = new Date();
+  if (!(treinouNoDia('C', ymd(d)) && treinouNoDia('L', ymd(d)))) d.setDate(d.getDate() - 1);
+  while (treinouNoDia('C', ymd(d)) && treinouNoDia('L', ymd(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+// ---------- gravação ----------
+let gravando = false; const pendentes = new Set();
+function salvarLocal() { LS.set('treino_regs', regs); LS.set('treino_cargas', cargas); }
+function salvar(id) { salvarLocal(); if (!db || semPermissao) return; pendentes.add(id); flush(); }
+async function flush() {
+  if (gravando || !pendentes.size) return;
+  const id = pendentes.values().next().value; pendentes.delete(id); gravando = true;
+  try {
+    if (id.startsWith('carga_')) await db.collection('cargas').doc(id.slice(6)).set(cargas[id.slice(6)] || {});
+    else if (regs[id]) await db.collection('registros').doc(id).set(regs[id]);
+  } catch (e) {
+    if (e && (e.code === 'permission-denied' || e.code === 'invalid_argument')) { semPermissao = true; render(); }
+    else if (e && e.code === 'unavailable') { pendentes.add(id); setTimeout(() => { gravando = false; flush(); }, 1500 + Math.random() * 1500); return; }
+  }
+  gravando = false; flush();
+}
+let cargaTimer = null;
+function mudarCarga(key, v) {
+  const n = Math.max(0, Math.min(999, Number(String(v).replace(',', '.')) || 0));
+  cargas[eu] = Object.assign({}, cargas[eu], { [key]: n });
+  salvarLocal();
+  const out = document.getElementById('aqkg'); if (out) out.textContent = n ? kgFmt(n / 2) + ' kg' : '—';
+  clearTimeout(cargaTimer); cargaTimer = setTimeout(() => { cargaTimer = null; salvar('carga_' + eu); }, 900);
+}
+const kgFmt = n => (Math.round(n * 2) / 2).toString().replace('.', ',');
+
+function marcar(t, i, k) {
+  if (!eu) return;
+  const id = idReg(hoje(), eu, t);
+  const r = regs[id] || novoReg(eu, t);
+  r.feitos[i][k] = !r.feitos[i][k]; r.atualizado = Date.now();
+  regs[id] = r; salvar(id);
+  if (completo(r) && !celebrou[id]) { celebrou[id] = true; LS.set('treino_celebrou', celebrou); render(); abrirBau(r); return; }
+  render();
+}
+
+// ---------- telas ----------
+const avatar = (h, s) => `<div class="av" style="width:${s}px;height:${s}px;border-color:${HEROI[h].cor}"><img src="img/${h === 'C' ? 'cleiton' : 'larissa'}_busto.png" alt="" style="width:100%;height:100%"></div>`;
+const blocos = (r, i, h) => {
+  const a = r ? r.feitos[i] : Array(nSets(i)).fill(false);
+  return a.map((on, k) => { const aq = k < nAq(i); return `<span class="blk" style="width:${aq ? 10 : 18}px;${aq && !on ? 'border-style:dashed;border-color:#4A4268;' : ''}background:${on ? (aq ? HEROI[h].claro : HEROI[h].cor) : '#120E20'}"></span>`; }).join('');
+};
+
+function telaTaverna() {
+  const t = tabTreino || treinoSugerido();
+  const dano = danoSemana(), hp = Math.max(0, HP_CHEFAO - dano.C - dano.L);
+  const herois = ['C', 'L'].map(h => { const s = stats(h); return `
+    <div class="painel" style="padding:8px">
+      <div class="row">${avatar(h, 52)}<div style="min-width:0"><div style="font-weight:700;font-size:17px">${HEROI[h].nome}${h === eu ? ' <span class="mut" style="font-size:13px">(você)</span>' : ''}</div><div class="mut" style="font-size:14px">${HEROI[h].classe}</div></div></div>
+      <div class="row gold" style="justify-content:space-between;font-weight:700;font-size:14px;margin-top:8px"><span>NV ${s.nivel}</span><span>${s.xp} XP</span></div>
+      <div class="bar" style="margin-top:4px"><div style="width:${s.pct}%;background:#6BD66B"></div></div>
+    </div>`; }).join('');
+  const prog = ['C', 'L'].map(h => { const r = regDe(h, t); const n = TREINOS[t].lista.length; const f = exCount(r);
+    return `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:700;font-size:15px">${HEROI[h].nome}</span><div class="row" style="gap:4px;flex:1">${Array.from({ length: n }, (_, i) => `<span style="flex:1;height:14px;border:2px solid #0D0B14;background:${i < f ? HEROI[h].cor : (r && r.feitos[i].some(Boolean) ? '#5A4128' : '#2A1D11')}"></span>`).join('')}</div><span style="font-weight:700;font-size:14px;width:30px;text-align:right">${f}/${n}</span></div>`; }).join('');
+  return `
+  <div class="row" style="justify-content:space-between">
+    <div><div class="sub">${esc(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}</div><h1>TAVERNA</h1></div>
+    <button class="card" data-go="chefao" style="padding:6px 8px;border-color:#E5484D;display:flex;align-items:center;gap:8px"><img src="img/golem.png" alt="" style="width:40px;height:34px;object-fit:contain"><div style="text-align:left"><div style="font-weight:700;font-size:13px;color:#FF7B7B">CHEFÃO ${hp} HP</div><div class="bar" style="width:84px;height:8px;margin-top:4px"><div style="width:${hp / HP_CHEFAO * 100}%;background:#E5484D"></div></div></div></button>
+  </div>
+  <div class="grid2">${herois}</div>
+  <div class="missao" style="display:flex;flex-direction:column;gap:12px">
+    <div class="row" style="justify-content:space-between"><span class="gold" style="font-weight:700;font-size:15px">MISSÃO DO DIA</span><span class="ok row" style="gap:4px;font-weight:700;font-size:14px"><img src="img/estrela.png" alt="" style="width:16px;height:16px">até ${totalSets(t) * 10 + 50} XP</span></div>
+    <div class="row"><div style="width:56px;height:56px;background:#F2C14E;border:4px solid #0D0B14;color:#1B1630;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700">${t}</div>
+      <div><div style="font-weight:700;font-size:22px">Treino ${t}</div><div style="font-size:16px;color:#E4D3B5">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios</div></div></div>
+    <div style="display:flex;flex-direction:column;gap:6px">${prog}</div>
+    <button class="btn-ouro" data-go="missoes" data-treino="${t}">INICIAR MISSÃO</button>
+  </div>
+  <h2>TROCAR DE MISSÃO</h2>
+  <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
+  <button class="mut" data-sair style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Sair da conta${usuario ? ' (' + esc(usuario.email) + ')' : ''}</button>`;
+}
+
+function telaMissoes() {
+  const t = tabTreino || treinoSugerido();
+  const lista = TREINOS[t].lista.map(([nome, obs], i) => {
+    const rC = regDe('C', t), rL = regDe('L', t);
+    const done = exFeito(rC, i) && exFeito(rL, i);
+    const img = arte(eu, t, i);
+    return `<button class="ex${done ? ' done' : ''}" data-ex="${i}">
+      <div class="thumb">${img ? `<img src="${img}" alt="" style="width:44px;height:44px;object-fit:contain">` : `<img src="img/ic_missoes.png" alt="" style="width:14px;height:32px;opacity:.4">`}</div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+        <div class="row" style="justify-content:space-between;gap:6px"><span style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</span><span class="gold" style="font-weight:700;font-size:14px;white-space:nowrap">${nAq(i) ? '2 AQ + ' : ''}3×${REPS}</span></div>
+        <span class="mut" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${obs}</span>
+        <div class="row" style="gap:4px"><span class="cC" style="font-size:12px;font-weight:700">C</span>${blocos(rC, i, 'C')}<span class="cL" style="font-size:12px;font-weight:700;margin-left:6px">L</span>${blocos(rL, i, 'L')}</div>
+      </div></button>`;
+  }).join('');
+  return `
+  <div><h1>MISSÃO: TREINO ${t}</h1><div class="sub">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios · 1º com aquecimento</div></div>
+  <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
+  <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>`;
+}
+
+function telaDesafio() {
+  const t = tabTreino || treinoSugerido(); const lista = TREINOS[t].lista;
+  const i = Math.min(exAtual, lista.length - 1); const [nome, obs] = lista[i];
+  const img = arte(eu, t, i); const aq = nAq(i);
+  const key = t + i; const kg = (cargas[eu] || {})[key] || 0; const kgOutro = (cargas[outro(eu)] || {})[key] || 0;
+  const linha = (h, editavel) => {
+    const r = regDe(h, t); const a = r ? r.feitos[i] : Array(nSets(i)).fill(false); const f = a.filter(Boolean).length;
+    const btns = a.map((on, k) => { const ehAq = k < aq; const label = ehAq ? 'AQ' : (k - aq + 1);
+      return `<button class="set${ehAq ? ' aq' : ''}${on ? ' on' : ''}" ${editavel ? `data-set="${k}"` : 'disabled'} aria-pressed="${on}" aria-label="${ehAq ? 'Aquecimento ' + (k + 1) : 'Série válida ' + (k - aq + 1)} de ${HEROI[h].nome}" style="${on ? `background:${ehAq ? HEROI[h].claro : HEROI[h].cor};${ehAq ? '' : `box-shadow:inset -4px -4px 0 ${HEROI[h].sombra};`}` : ''}${editavel ? '' : 'min-height:34px;font-size:14px;'}">${label}</button>`; }).join('');
+    return `<div class="card" style="display:flex;flex-direction:column;gap:8px;${editavel ? '' : 'opacity:.85'}">
+      <div class="row" style="justify-content:space-between">${`<span class="row" style="gap:8px">${avatar(h, 36)}<span class="${HEROI[h].css}" style="font-weight:700;font-size:17px">${HEROI[h].nome}${editavel ? '' : ' <span class="mut" style="font-size:13px">(só vê)</span>'}</span></span>`}
+      <span style="font-weight:700;font-size:14px" class="${f === a.length ? 'ok' : 'mut'}">${f === a.length ? 'VENCIDO!' : f + '/' + a.length}</span></div>
+      ${aq ? `<div class="sets" style="margin-bottom:-2px"><span style="grid-column:span 2;font-size:13px" class="mut">AQUECIMENTO</span><span style="grid-column:span 3;font-size:13px" class="gold">VÁLIDAS</span></div>` : ''}
+      <div class="sets${aq ? '' : ' v3'}">${btns}</div></div>`;
+  };
+  return `
+  <div class="row" style="justify-content:space-between">
+    <button class="btn-sec" data-go="missoes" aria-label="Voltar" style="width:48px;padding:0"><img src="img/seta_esq.png" alt="" style="width:22px;height:18px"></button>
+    <span style="background:#F2C14E;color:#1B1630;border:3px solid #0D0B14;font-weight:700;font-size:14px;padding:6px 8px">DESAFIO ${i + 1}/${lista.length} · TREINO ${t}</span>
+  </div>
+  <div style="background:#120E20;border:4px solid #0D0B14;height:220px;display:flex;align-items:center;justify-content:center">${img ? `<img src="${img}" alt="${HEROI[eu].nome} fazendo ${nome}" style="max-width:96%;max-height:206px;object-fit:contain">` : `<span class="mut" style="font-size:16px">Arte em breve</span>`}</div>
+  <div><h1>${nome.toUpperCase()}</h1><div class="sub">${obs}</div></div>
+  <div class="grid2">
+    ${aq ? `<div class="painel" style="padding:6px 8px"><div style="font-weight:700;font-size:24px" class="mut">2 <span style="font-size:15px">aquecimento</span></div><div style="font-size:15px">${AQ_REPS} reps · 50% da carga</div></div>` : ''}
+    <div class="painel" style="padding:6px 8px;${aq ? '' : 'grid-column:span 2'}"><div style="font-weight:700;font-size:24px" class="gold">3 <span style="font-size:15px">válidas</span></div><div style="font-size:15px">${REPS} reps · carga máxima</div></div>
+  </div>
+  <div class="card row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <label class="row" style="gap:8px;font-size:16px">Sua carga <input class="kg" id="kg" inputmode="decimal" value="${kg ? kgFmt(kg) : ''}" placeholder="kg" aria-label="Sua carga em kg"> kg</label>
+    ${aq ? `<span style="font-size:15px">Aquecer com <b class="gold" id="aqkg">${kg ? kgFmt(kg / 2) + ' kg' : '—'}</b></span>` : ''}
+    ${kgOutro ? `<span class="${HEROI[outro(eu)].css}" style="font-size:14px;width:100%">${HEROI[outro(eu)].nome} usa ${kgFmt(kgOutro)} kg</span>` : ''}
+  </div>
+  ${linha(eu, true)}
+  ${linha(outro(eu), false)}
+  <div class="grid2">
+    <button class="btn-sec" data-ex-nav="-1" ${i === 0 ? 'disabled style="opacity:.4"' : ''}><img src="img/seta_esq.png" alt="" style="width:20px;height:17px">Anterior</button>
+    ${i < lista.length - 1 ? `<button class="btn-ouro" data-ex-nav="1">PRÓXIMO <img src="img/seta_dir.png" alt="" style="width:20px;height:17px"></button>` : `<button class="btn-ouro" data-go="taverna">CONCLUIR</button>`}
+  </div>`;
+}
+
+function telaDiario() {
+  const ini = inicioSemana();
+  const dias = DIAS.map((l, k) => { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d);
+    const c = treinouNoDia('C', s), lz = treinouNoDia('L', s), eh = s === hoje();
+    return `<div class="dia"><span class="mut" style="font-size:14px">${l}</span><b style="border-color:${eh ? '#F2C14E' : '#0D0B14'};background:${c && lz ? '#6BD66B' : (c || lz) ? '#3A3060' : '#120E20'};color:${c && lz ? '#1B1630' : '#F3EEDC'}">${d.getDate()}</b><span><span class="dot" style="background:${c ? '#6EA0FF' : 'transparent'}"></span> <span class="dot" style="background:${lz ? '#FF9A52' : 'transparent'}"></span></span></div>`; }).join('');
+  const porDia = {};
+  Object.values(regs).filter(r => marcas(r) > 0).forEach(r => { const k = r.data + r.treino; (porDia[k] = porDia[k] || { data: r.data, treino: r.treino, C: null, L: null })[r.heroi] = r; });
+  const lista = Object.values(porDia).sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 12).map(x => {
+    const tag = h => { const r = x[h]; const n = TREINOS[x.treino].lista.length; const f = exCount(r);
+      const st = !r ? 'background:#120E20;color:#8F88A6' : f === n ? `background:${HEROI[h].cor};color:#1B1630` : `background:#120E20;color:${HEROI[h].cor}`;
+      return `<span style="font-weight:700;font-size:13px;padding:5px 6px;border:2px solid #0D0B14;${st}">${h} ${!r ? '—' : f === n ? 'OK' : f + '/' + n}</span>`; };
+    return `<div class="card row" style="padding:8px 10px"><div style="flex:1"><div style="font-weight:700;font-size:16px">Treino ${x.treino} · ${TREINOS[x.treino].grupo}</div><div class="mut" style="font-size:14px">${dataBonita(x.data)}</div></div>${tag('C')}${tag('L')}</div>`;
+  }).join('') || `<div class="card mut" style="font-size:16px">Nenhuma missão registrada ainda. Marque as séries no treino de hoje.</div>`;
+  const combo = comboJuntos();
+  return `
+  <div><div class="sub">Esta semana</div><h1>DIÁRIO DE AVENTURA</h1></div>
+  <div class="missao row"><img src="img/chama.png" alt="" style="width:36px;height:44px;object-fit:contain"><div><div class="gold" style="font-weight:700;font-size:18px">COMBO x${combo}</div><div style="font-size:16px">${combo === 1 ? '1 dia' : combo + ' dias'} seguidos treinando em dupla</div></div></div>
+  <div class="card" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:10px 6px">${dias}</div>
+  <h2>REGISTROS</h2>
+  <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>`;
+}
+
+function telaChefao() {
+  const d = danoSemana(), total = d.C + d.L, hp = Math.max(0, HP_CHEFAO - total);
+  const fim = new Date(inicioSemana()); fim.setDate(fim.getDate() + 6);
+  const falta = Math.max(0, Math.round((fim - new Date(hoje() + 'T00:00:00')) / 86400000));
+  const max = Math.max(1, d.C, d.L);
+  return `
+  <div><h1>CHEFÃO DA SEMANA</h1><div class="sub">${hp === 0 ? 'Derrotado! Vocês venceram esta semana.' : falta === 0 ? 'Último dia para derrotar' : falta === 1 ? 'Falta 1 dia para derrotar' : 'Faltam ' + falta + ' dias para derrotar'}</div></div>
+  <div class="painel" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px">
+    <img src="img/golem.png" alt="Golem da Preguiça" style="width:200px;height:164px;object-fit:contain;${hp === 0 ? 'filter:grayscale(1);opacity:.5' : ''}">
+    <span style="font-weight:700;font-size:18px">GOLEM DA PREGUIÇA</span>
+    <div style="width:100%"><div class="row" style="justify-content:space-between;font-weight:700;font-size:14px"><span class="row" style="gap:6px;color:#FF7B7B"><img src="img/coracao.png" alt="" style="width:16px;height:14px">HP</span><span>${hp} / ${HP_CHEFAO}</span></div>
+    <div class="bar" style="height:18px;margin-top:4px"><div style="width:${hp / HP_CHEFAO * 100}%;background:#E5484D;box-shadow:inset 0 -6px 0 #A52A2E"></div></div></div>
+    <span class="mut" style="font-size:15px">Cada série válida = 1 de dano</span>
+  </div>
+  <h2>DANO DO GRUPO</h2>
+  <div class="card" style="display:flex;flex-direction:column;gap:10px">${['C', 'L'].map(h => `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:700;font-size:16px">${HEROI[h].nome}</span><div class="bar" style="flex:1;height:14px"><div style="width:${d[h] / max * 100}%;background:${HEROI[h].cor}"></div></div><span style="font-weight:700;font-size:15px;width:32px;text-align:right">${d[h]}</span></div>`).join('')}</div>`;
+}
+
+function abrirBau(r) {
+  const m = document.getElementById('modal');
+  m.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="Missão cumprida"><div>
+    <h1 style="color:#6BD66B">MISSÃO CUMPRIDA!</h1>
+    <div style="font-size:17px">Treino ${r.treino} completo · <b class="gold">+${xpDe(r)} XP</b></div>
+    <img id="bauimg" src="img/bau_fechado.png" alt="Baú" style="width:200px;height:138px;object-fit:contain">
+    <button class="btn-ouro" id="bauabrir" style="max-width:260px">ABRIR BAÚ</button>
+  </div></div>`;
+  document.getElementById('bauabrir').onclick = () => {
+    const img = document.getElementById('bauimg'); img.src = 'img/bau_aberto.png'; img.style.height = '194px';
+    const b = document.getElementById('bauabrir'); b.textContent = 'VOLTAR À TAVERNA';
+    b.onclick = () => { m.innerHTML = ''; tela = 'taverna'; render(); };
+  };
+}
+
+function telaLogin() {
+  return `<div class="modal" role="dialog" aria-modal="true" aria-label="Entrar"><div>
+    <div class="row" style="gap:6px;justify-content:center"><img src="img/cleiton_corpo.png" alt="" style="width:56px;height:112px;object-fit:contain"><img src="img/larissa_corpo.png" alt="" style="width:56px;height:112px;object-fit:contain"></div>
+    <h1>ENTRAR NA TAVERNA</h1>
+    ${!authPronto ? '<div class="sub">Conectando…</div>' : `
+    <form class="login" id="formLogin" autocomplete="on">
+      <label for="lgEmail">E-mail</label>
+      <input class="campo" id="lgEmail" type="email" autocomplete="username" inputmode="email" required>
+      <label for="lgSenha">Senha</label>
+      <input class="campo" id="lgSenha" type="password" autocomplete="current-password" required>
+      ${loginErro ? `<div class="aviso" role="alert">${esc(loginErro)}</div>` : ''}
+      <button class="btn-ouro" type="submit" ${loginEnviando ? 'disabled' : ''}>${loginEnviando ? 'ENTRANDO…' : 'ENTRAR'}</button>
+      <button type="button" class="mut" data-esqueci style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Esqueci a senha</button>
+    </form>`}
+  </div></div>`;
+}
+
+const TABS = [['taverna', 'Taverna', 'ic_taverna'], ['missoes', 'Missões', 'ic_missoes'], ['diario', 'Diário', 'ic_diario'], ['chefao', 'Chefão', 'coracao']];
+function render() {
+  const main = document.getElementById('main');
+  const avisos = [];
+  if (modo === 'local') avisos.push('Salvando só neste celular por enquanto. O progresso de um não aparece no outro.');
+  if (semPermissao) avisos.push('Esta conta não tem permissão para salvar no banco. Confira as regras do Firestore. Por enquanto, salvando só neste celular.');
+  if (modo === 'carregando') avisos.push('Conectando…');
+  const corpo = tela === 'missoes' ? telaMissoes() : tela === 'desafio' ? telaDesafio() : tela === 'diario' ? telaDiario() : tela === 'chefao' ? telaChefao() : telaTaverna();
+  main.innerHTML = avisos.map(a => `<div class="aviso">${a}</div>`).join('') + corpo;
+  const navAtual = tela === 'desafio' ? 'missoes' : tela;
+  document.getElementById('nav').innerHTML = TABS.map(([k, l, ic]) => `<button data-go="${k}" ${k === navAtual ? 'aria-current="page"' : ''}><img src="img/${ic}.png" alt="">${l}</button>`).join('');
+  if (!eu) {
+    const m = document.getElementById('modal');
+    const em = document.getElementById('lgEmail'), se = document.getElementById('lgSenha');
+    const vals = em ? [em.value, se.value] : null;
+    m.innerHTML = telaLogin();
+    if (vals && document.getElementById('lgEmail')) { document.getElementById('lgEmail').value = vals[0]; document.getElementById('lgSenha').value = vals[1]; }
+    const f = document.getElementById('formLogin'); if (f) f.onsubmit = entrar;
+  }
+  const kg = document.getElementById('kg');
+  if (kg) kg.addEventListener('input', e => mudarCarga((tabTreino || treinoSugerido()) + Math.min(exAtual, TREINOS[tabTreino || treinoSugerido()].lista.length - 1), e.target.value));
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const ds = b.dataset;
+  if ('esqueci' in ds) { esqueciSenha(); return; }
+  if ('sair' in ds) { if (fb) fb.signOut(fb.auth); return; }
+  if (ds.treinoSel) { tabTreino = ds.treinoSel; render(); return; }
+  if (ds.ex) { exAtual = +ds.ex; tela = 'desafio'; render(); window.scrollTo(0, 0); return; }
+  if (ds.exNav) { exAtual = Math.max(0, exAtual + Number(ds.exNav)); render(); window.scrollTo(0, 0); return; }
+  if (ds.set) { const t = tabTreino || treinoSugerido(); marcar(t, Math.min(exAtual, TREINOS[t].lista.length - 1), +ds.set); return; }
+  if (ds.go) { if (ds.treino) tabTreino = ds.treino; tela = ds.go; render(); window.scrollTo(0, 0); }
+});
+
+// ---------- login e banco (Firebase) ----------
+const MSG_ERRO = {
+  'auth/invalid-credential': 'E-mail ou senha errados.',
+  'auth/wrong-password': 'E-mail ou senha errados.',
+  'auth/user-not-found': 'Essa conta não existe. Ela precisa ser criada no Firebase.',
+  'auth/invalid-email': 'Esse e-mail não parece válido.',
+  'auth/too-many-requests': 'Muitas tentativas. Espere uns minutos e tente de novo.',
+  'auth/network-request-failed': 'Sem internet. Confira a conexão.'
+};
+async function entrar(e) {
+  e.preventDefault(); if (!fb || loginEnviando) return;
+  const email = document.getElementById('lgEmail').value.trim(), senha = document.getElementById('lgSenha').value;
+  loginErro = ''; loginEnviando = true; render();
+  try { await fb.signInWithEmailAndPassword(fb.auth, email, senha); }
+  catch (err) { loginErro = MSG_ERRO[err && err.code] || 'Não deu para entrar. Tente de novo.'; }
+  loginEnviando = false; render();
+}
+async function esqueciSenha() {
+  const em = document.getElementById('lgEmail'); const email = em ? em.value.trim() : '';
+  if (!email) { loginErro = 'Digite seu e-mail acima e toque de novo em "Esqueci a senha".'; render(); return; }
+  try { await fb.sendPasswordResetEmail(fb.auth, email); loginErro = 'Enviamos um e-mail para trocar a senha. Olhe também o spam.'; }
+  catch (err) { loginErro = MSG_ERRO[err && err.code] || 'Não deu para enviar o e-mail agora.'; }
+  render();
+}
+function criarDb(f) {
+  return { collection: nome => ({
+    doc: id => ({ set: data => f.setDoc(f.doc(f.db, nome, id), data) }),
+    onSnapshot: (ok, erro) => f.onSnapshot(f.collection(f.db, nome),
+      snap => ok({ docs: snap.docs.map(d => ({ id: d.id, data: () => d.data() })) }), erro)
+  }) };
+}
+let pararOuvir = [];
+function conectarBanco() {
+  pararOuvir.forEach(fn => { try { fn(); } catch (e) {} }); pararOuvir = [];
+  modo = 'carregando'; semPermissao = false; render();
+  const timer = setTimeout(() => { if (modo === 'carregando') { modo = 'local'; render(); } }, 12000);
+  pararOuvir.push(db.collection('registros').onSnapshot(snap => {
+    clearTimeout(timer);
+    const novos = {};
+    snap.docs.forEach(d => { const r = limparReg(d.id, d.data()); if (r) novos[d.id] = r; });
+    pendentes.forEach(id => { if (regs[id]) novos[id] = regs[id]; });
+    if (modo !== 'db') Object.keys(regs).forEach(id => { if (!novos[id] && regs[id].heroi === eu) { novos[id] = regs[id]; salvarPend(id); } });
+    regs = novos; modo = 'db'; salvarLocal(); render();
+  }, err => { clearTimeout(timer); if (err && err.code === 'permission-denied') semPermissao = true; modo = 'local'; render(); }));
+  pararOuvir.push(db.collection('cargas').onSnapshot(snap => {
+    snap.docs.forEach(d => { if (HEROI[d.id]) { const o = {}; Object.entries(d.data() || {}).forEach(([k, v]) => { if (/^[ABC]\d$/.test(k) && typeof v === 'number') o[k] = v; }); if (d.id !== eu || !cargaTimer) cargas[d.id] = o; } });
+    salvarLocal(); if (tela !== 'desafio') render();
+  }, () => {}));
+}
+render();
+(async () => {
+  try {
+    const base = 'https://www.gstatic.com/firebasejs/' + FB_V + '/';
+    const [A, U, F] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+    const app = A.initializeApp(FB_CONFIG);
+    fb = { auth: U.getAuth(app), db: F.getFirestore(app), signInWithEmailAndPassword: U.signInWithEmailAndPassword, signOut: U.signOut,
+      sendPasswordResetEmail: U.sendPasswordResetEmail, setDoc: F.setDoc, doc: F.doc, collection: F.collection, onSnapshot: F.onSnapshot };
+    db = criarDb(fb);
+    U.onAuthStateChanged(fb.auth, u => {
+      authPronto = true; usuario = u;
+      if (u) {
+        eu = (u.email || '').toLowerCase() === EMAIL_LARISSA ? 'L' : 'C';
+        document.getElementById('modal').innerHTML = ''; loginErro = '';
+        conectarBanco();
+      } else {
+        eu = null; pararOuvir.forEach(fn => { try { fn(); } catch (e) {} }); pararOuvir = []; modo = 'carregando'; render();
+      }
+    });
+  } catch (e) {
+    authPronto = true; loginErro = 'Não deu para carregar o login. Confira a internet e abra o app de novo.'; render();
+  }
+})();
+function salvarPend(id) { if (!semPermissao) { pendentes.add(id); setTimeout(flush, 0); } }
+</script>
+</body>
+</html>
