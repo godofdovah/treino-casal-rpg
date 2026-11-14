@@ -265,8 +265,8 @@ async function conectarRelogio() {
 async function temPermissao() {
   try {
     const r = await Health.checkHealthPermissions({ permissions: PERM_SAUDE });
-    const lista = (r && r.permissions) || [];
-    const ok = {}; lista.forEach(o => Object.assign(ok, o));
+    const p = (r && r.permissions) || {};
+    const ok = {}; if (Array.isArray(p)) p.forEach(o => Object.assign(ok, o)); else Object.assign(ok, p);
     return !!(ok.READ_WORKOUTS && ok.READ_STEPS);
   } catch (e) { return false; }
 }
