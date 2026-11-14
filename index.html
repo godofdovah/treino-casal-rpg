@@ -237,7 +237,7 @@ function limparSaude(d) {
   const num = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.round(v) : 0);
   const treinos = (Array.isArray(d.treinos) ? d.treinos : []).slice(0, 20).map(t => ({
     tipo: String(t.tipo || 'Exercício').slice(0, 30), inicio: String(t.inicio || '').slice(0, 5), min: num(t.min), kcal: num(t.kcal), m: num(t.m) }));
-  return { data: d.data, heroi: d.heroi, passos: num(d.passos), kcalAtivas: num(d.kcalAtivas), treinos, atualizado: Number(d.atualizado) || 0 };
+  return { data: d.data, heroi: d.heroi, passos: num(d.passos), kcalAtivas: num(d.kcalAtivas), kcalTotais: num(d.kcalTotais), treinos, atualizado: Number(d.atualizado) || 0 };
 }
 for (const k of Object.keys(saude)) { const r = limparSaude(saude[k]); if (r) saude[k] = r; else delete saude[k]; }
 const saudeDe = (h, data) => saude[idSaude(data || hoje(), h)] || null;
@@ -273,10 +273,11 @@ async function sincronizarSaude(forcar) {
     const fim = new Date(); fim.setHours(23, 59, 59, 999);
     const q = { startDate: ini.toISOString(), endDate: fim.toISOString() };
     const dias = {};
-    for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, treinos: [] }; }
+    for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, kcalTotais: 0, treinos: [] }; }
     const agg = async tipo => { try { const r = await Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, q)); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
     (await agg('steps')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].passos += a.value || 0; });
     (await agg('active-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalAtivas += a.value || 0; });
+    (await agg('total-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalTotais += a.value || 0; });
     let ws = [];
     try { const r = await Health.queryWorkouts(Object.assign({ includeHeartRate: false, includeRoute: false, includeSteps: false }, q)); ws = (r && r.workouts) || []; } catch (e) {}
     const vistos = new Set();
@@ -290,7 +291,7 @@ async function sincronizarSaude(forcar) {
       const novo = limparSaude(d); const id = idSaude(d.data, eu); const velho = saude[id];
       const igual = velho && JSON.stringify(Object.assign({}, velho, { atualizado: 0 })) === JSON.stringify(Object.assign({}, novo, { atualizado: 0 }));
       if (igual) return;
-      if (!velho && !novo.passos && !novo.kcalAtivas && !novo.treinos.length) return;
+      if (!velho && !novo.passos && !novo.kcalAtivas && !novo.kcalTotais && !novo.treinos.length) return;
       novo.atualizado = Date.now(); saude[id] = novo; salvar('saude_' + id);
     });
     saudeEstado = 'ok'; saudeSync = Date.now();
@@ -345,6 +346,7 @@ function telaTaverna() {
   const herois = ['C', 'L'].map(h => { const s = stats(h); return `
     <div class="painel" style="padding:8px">
       <div class="row">${avatar(h, 52)}<div style="min-width:0"><div style="font-weight:800;font-size:17px">${HEROI[h].nome}${h === eu ? ' <span class="mut" style="font-size:13px">(você)</span>' : ''}</div><div class="mut" style="font-size:14px">${HEROI[h].classe}</div></div></div>
+      ${(() => { const r = saudeDe(h); return `<div style="display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:14px"><span><b>${r ? r.passos.toLocaleString('pt-BR') : '—'}</b> <span class="mut">passos</span></span><span><b class="gold">${r && r.kcalTotais ? r.kcalTotais.toLocaleString('pt-BR') : '—'}</b> <span class="mut">kcal no dia</span></span></div>`; })()}
       <div class="row gold" style="justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px"><span>NV ${s.nivel}</span><span>${s.xp} XP</span></div>
       <div class="bar" style="margin-top:4px"><div style="width:${s.pct}%;background:#6BD66B"></div></div>
     </div>`; }).join('');
