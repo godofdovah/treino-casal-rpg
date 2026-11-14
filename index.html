@@ -54,6 +54,7 @@ input.kg{width:90px;min-height:44px;background:#120E20;border:3px solid #4A4268;
 .dia{display:flex;flex-direction:column;align-items:center;gap:5px}
 .dia b{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:3px solid #0D0B14;font-size:14px}
 .dot{width:8px;height:8px;display:inline-block}
+.nativo main{padding-top:calc(16px + max(env(safe-area-inset-top), 34px))}
 .campo{width:100%;min-height:50px;background:#120E20;border:3px solid #4A4268;color:#F3EEDC;font-family:inherit;font-size:18px;padding:0 12px}
 .campo:focus{outline:none;border-color:#F2C14E}
 .login{width:100%;display:flex;flex-direction:column;gap:10px;text-align:left}
@@ -218,6 +219,7 @@ const kgFmt = n => (Math.round(n * 2) / 2).toString().replace('.', ',');
 
 // ---------- relógio (Galaxy Watch → Samsung Health → Health Connect) ----------
 const NATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+if (NATIVO) document.documentElement.classList.add('nativo');
 let Health = null;
 if (NATIVO) {
   try { Health = (window.capacitorExports && window.capacitorExports.registerPlugin) ? window.capacitorExports.registerPlugin('HealthPlugin') : (window.Capacitor.Plugins && window.Capacitor.Plugins.HealthPlugin) || null; } catch (e) { Health = null; }
