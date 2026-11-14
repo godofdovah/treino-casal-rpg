@@ -64,6 +64,7 @@ input.kg{width:90px;min-height:44px;background:#120E20;border:3px solid #4A4268;
 <div id="app"><main id="main" aria-live="polite"></main></div>
 <nav id="nav" aria-label="Menu"></nav>
 <div id="modal"></div>
+<script src="capacitor.js"></script>
 <script>
 'use strict';
 // ---------- dados fixos do treino ----------
@@ -197,9 +198,10 @@ async function flush() {
   const id = pendentes.values().next().value; pendentes.delete(id); gravando = true;
   try {
     if (id.startsWith('carga_')) await db.collection('cargas').doc(id.slice(6)).set(cargas[id.slice(6)] || {});
+    else if (id.startsWith('saude_')) { const k = id.slice(6); if (saude[k]) await db.collection('saude').doc(k).set(saude[k]); }
     else if (regs[id]) await db.collection('registros').doc(id).set(regs[id]);
   } catch (e) {
-    if (e && (e.code === 'permission-denied' || e.code === 'invalid_argument')) { semPermissao = true; render(); }
+    if (e && (e.code === 'permission-denied' || e.code === 'invalid_argument')) { if (!id.startsWith('saude_')) { semPermissao = true; render(); } }
     else if (e && e.code === 'unavailable') { pendentes.add(id); setTimeout(() => { gravando = false; flush(); }, 1500 + Math.random() * 1500); return; }
   }
   gravando = false; flush();
@@ -213,6 +215,110 @@ function mudarCarga(key, v) {
   clearTimeout(cargaTimer); cargaTimer = setTimeout(() => { cargaTimer = null; salvar('carga_' + eu); }, 900);
 }
 const kgFmt = n => (Math.round(n * 2) / 2).toString().replace('.', ',');
+
+// ---------- relógio (Galaxy Watch → Samsung Health → Health Connect) ----------
+const NATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+let Health = null;
+if (NATIVO) {
+  try { Health = (window.capacitorExports && window.capacitorExports.registerPlugin) ? window.capacitorExports.registerPlugin('HealthPlugin') : (window.Capacitor.Plugins && window.Capacitor.Plugins.HealthPlugin) || null; } catch (e) { Health = null; }
+}
+const PERM_SAUDE = ['READ_STEPS', 'READ_WORKOUTS', 'READ_TOTAL_CALORIES', 'READ_ACTIVE_CALORIES', 'READ_DISTANCE'];
+let saude = LS.get('treino_saude', {});
+let saudeEstado = Health ? 'verificando' : 'web'; // web | verificando | semapp | semperm | ok | erro
+let saudeSync = 0, saudeRodando = false;
+const TIPO_TREINO = { WALKING: 'Caminhada', RUNNING_TREADMILL: 'Esteira', RUNNING: 'Corrida', STRENGTH_TRAINING: 'Musculação', WEIGHTLIFTING: 'Musculação',
+  BIKING: 'Bike', BIKING_STATIONARY: 'Bike ergométrica', ELLIPTICAL: 'Elíptico', HIKING: 'Trilha', STAIR_CLIMBING_MACHINE: 'Escada', STAIR_CLIMBING: 'Escada',
+  HIGH_INTENSITY_INTERVAL_TRAINING: 'HIIT', CALISTHENICS: 'Calistenia', STRETCHING: 'Alongamento', YOGA: 'Yoga', PILATES: 'Pilates', SWIMMING_POOL: 'Natação', DANCING: 'Dança', OTHER: 'Exercício' };
+const idSaude = (data, h) => data + '_' + h;
+function limparSaude(d) {
+  if (!d || typeof d !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || !HEROI[d.heroi]) return null;
+  const num = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.round(v) : 0);
+  const treinos = (Array.isArray(d.treinos) ? d.treinos : []).slice(0, 20).map(t => ({
+    tipo: String(t.tipo || 'Exercício').slice(0, 30), inicio: String(t.inicio || '').slice(0, 5), min: num(t.min), kcal: num(t.kcal), m: num(t.m) }));
+  return { data: d.data, heroi: d.heroi, passos: num(d.passos), kcalAtivas: num(d.kcalAtivas), treinos, atualizado: Number(d.atualizado) || 0 };
+}
+for (const k of Object.keys(saude)) { const r = limparSaude(saude[k]); if (r) saude[k] = r; else delete saude[k]; }
+const saudeDe = (h, data) => saude[idSaude(data || hoje(), h)] || null;
+const kcalTreinos = r => (r ? r.treinos.reduce((s, t) => s + t.kcal, 0) : 0);
+const kmFmt = m => (m / 1000).toFixed(1).replace('.', ',');
+
+async function conectarRelogio() {
+  if (!Health) return;
+  try {
+    const { available } = await Health.isHealthAvailable();
+    if (!available) { saudeEstado = 'semapp'; render(); try { await Health.showHealthConnectInPlayStore(); } catch (e) {} return; }
+    await Health.requestHealthPermissions({ permissions: PERM_SAUDE });
+    saudeSync = 0; await sincronizarSaude(true);
+  } catch (e) { saudeEstado = 'erro'; render(); }
+}
+async function temPermissao() {
+  try {
+    const r = await Health.checkHealthPermissions({ permissions: PERM_SAUDE });
+    const lista = (r && r.permissions) || [];
+    const ok = {}; lista.forEach(o => Object.assign(ok, o));
+    return !!(ok.READ_WORKOUTS && ok.READ_STEPS);
+  } catch (e) { return false; }
+}
+async function sincronizarSaude(forcar) {
+  if (!Health || !eu || saudeRodando) return;
+  if (!forcar && Date.now() - saudeSync < 60000) return;
+  saudeRodando = true;
+  try {
+    const { available } = await Health.isHealthAvailable();
+    if (!available) { saudeEstado = 'semapp'; return; }
+    if (!(await temPermissao())) { saudeEstado = 'semperm'; return; }
+    const ini = new Date(); ini.setHours(0, 0, 0, 0); ini.setDate(ini.getDate() - 6);
+    const fim = new Date(); fim.setHours(23, 59, 59, 999);
+    const q = { startDate: ini.toISOString(), endDate: fim.toISOString() };
+    const dias = {};
+    for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, treinos: [] }; }
+    const agg = async tipo => { try { const r = await Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, q)); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
+    (await agg('steps')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].passos += a.value || 0; });
+    (await agg('active-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalAtivas += a.value || 0; });
+    let ws = [];
+    try { const r = await Health.queryWorkouts(Object.assign({ includeHeartRate: false, includeRoute: false, includeSteps: false }, q)); ws = (r && r.workouts) || []; } catch (e) {}
+    const vistos = new Set();
+    ws.sort((a, b) => (a.startDate < b.startDate ? -1 : 1)).forEach(w => {
+      const dt = new Date(w.startDate); const s = ymd(dt); if (!dias[s]) return;
+      const chave = w.startDate.slice(0, 16) + (w.workoutType || ''); if (vistos.has(chave)) return; vistos.add(chave);
+      dias[s].treinos.push({ tipo: TIPO_TREINO[w.workoutType] || 'Exercício', inicio: pad(dt.getHours()) + ':' + pad(dt.getMinutes()),
+        min: (w.duration || 0) / 60, kcal: w.calories || 0, m: w.distance || 0 });
+    });
+    Object.values(dias).forEach(d => {
+      const novo = limparSaude(d); const id = idSaude(d.data, eu); const velho = saude[id];
+      const igual = velho && JSON.stringify(Object.assign({}, velho, { atualizado: 0 })) === JSON.stringify(Object.assign({}, novo, { atualizado: 0 }));
+      if (igual) return;
+      if (!velho && !novo.passos && !novo.kcalAtivas && !novo.treinos.length) return;
+      novo.atualizado = Date.now(); saude[id] = novo; salvar('saude_' + id);
+    });
+    saudeEstado = 'ok'; saudeSync = Date.now();
+  } catch (e) { saudeEstado = 'erro'; }
+  finally { saudeRodando = false; LS.set('treino_saude', saude); render(); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizarSaude(false); });
+
+function painelRelogio() {
+  const linha = h => {
+    const r = saudeDe(h); const kt = kcalTreinos(r);
+    const treinos = r && r.treinos.length ? r.treinos.map(t => `<div class="row" style="justify-content:space-between;font-size:15px;gap:6px"><span>${esc(t.tipo)} <span class="mut" style="font-size:13px">${esc(t.inicio)} · ${t.min} min${t.m >= 100 ? ' · ' + kmFmt(t.m) + ' km' : ''}</span></span><b class="gold" style="white-space:nowrap">${t.kcal} kcal</b></div>`).join('')
+      : `<div class="mut" style="font-size:14px">Nenhum treino no relógio hoje</div>`;
+    return `<div style="display:flex;flex-direction:column;gap:5px">
+      <div class="row" style="justify-content:space-between"><span class="${HEROI[h].css}" style="font-weight:800;font-size:16px">${HEROI[h].nome}</span>
+      <span style="font-size:14px"><b>${r ? r.passos.toLocaleString('pt-BR') : 0}</b> <span class="mut">passos</span> · <b class="gold">${kt}</b> <span class="mut">kcal treino</span></span></div>${treinos}</div>`;
+  };
+  let acao = '';
+  if (saudeEstado === 'web') acao = `<div class="mut" style="font-size:13px">O relógio só conecta pelo app instalado (APK).</div>`;
+  else if (saudeEstado === 'semperm' || saudeEstado === 'erro') acao = `<button class="btn-sec" data-relogio>CONECTAR MEU RELÓGIO</button>`;
+  else if (saudeEstado === 'semapp') acao = `<div class="aviso" style="font-size:14px">Este celular precisa do Health Connect. Instale pela Play Store e toque em conectar de novo.</div><button class="btn-sec" data-relogio>CONECTAR MEU RELÓGIO</button>`;
+  else if (saudeEstado === 'ok') acao = `<button class="mut" data-relogio-sync style="background:none;border:0;font-size:13px;text-decoration:underline;min-height:40px">Atualizar agora</button>`;
+  return `<h2>RELÓGIO HOJE</h2>
+  <div class="card" style="display:flex;flex-direction:column;gap:12px">${linha(eu || 'C')}<div style="height:3px;background:#0D0B14"></div>${linha(outro(eu || 'C'))}${acao}</div>`;
+}
+function semanaRelogio() {
+  const ini = ymd(inicioSemana()); const t = { C: { kcal: 0, m: 0, n: 0, passos: 0 }, L: { kcal: 0, m: 0, n: 0, passos: 0 } };
+  Object.values(saude).forEach(r => { if (r.data >= ini) { const x = t[r.heroi]; x.passos += r.passos; r.treinos.forEach(w => { x.kcal += w.kcal; x.m += w.m; x.n++; }); } });
+  return `<h2>RELÓGIO NA SEMANA</h2><div class="card" style="display:flex;flex-direction:column;gap:8px">${['C', 'L'].map(h => `<div class="row" style="justify-content:space-between;font-size:15px"><span class="${HEROI[h].css}" style="font-weight:800;width:70px">${HEROI[h].nome}</span><span>${t[h].n} treinos · <b class="gold">${t[h].kcal.toLocaleString('pt-BR')} kcal</b> · ${kmFmt(t[h].m)} km</span></div>`).join('')}</div>`;
+}
 
 function marcar(t, i, k) {
   if (!eu) return;
@@ -255,6 +361,7 @@ function telaTaverna() {
     <div style="display:flex;flex-direction:column;gap:6px">${prog}</div>
     <button class="btn-ouro" data-go="missoes" data-treino="${t}">INICIAR MISSÃO</button>
   </div>
+  ${painelRelogio()}
   <h2>TROCAR DE MISSÃO</h2>
   <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
   <button class="mut" data-sair style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Sair da conta${usuario ? ' (' + esc(usuario.email) + ')' : ''}</button>`;
@@ -337,6 +444,7 @@ function telaDiario() {
   <div><div class="sub">Esta semana</div><h1>DIÁRIO DE AVENTURA</h1></div>
   <div class="missao row"><img src="img/chama.png" alt="" style="width:36px;height:44px;object-fit:contain"><div><div class="gold" style="font-weight:800;font-size:18px">COMBO x${combo}</div><div style="font-size:16px">${combo === 1 ? '1 dia' : combo + ' dias'} seguidos treinando em dupla</div></div></div>
   <div class="card" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:10px 6px">${dias}</div>
+  ${semanaRelogio()}
   <h2>REGISTROS</h2>
   <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>`;
 }
@@ -418,6 +526,8 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const ds = b.dataset;
   if ('esqueci' in ds) { esqueciSenha(); return; }
+  if ('relogio' in ds) { conectarRelogio(); return; }
+  if ('relogioSync' in ds) { sincronizarSaude(true); return; }
   if ('sair' in ds) { if (fb) fb.signOut(fb.auth); return; }
   if (ds.treinoSel) { tabTreino = ds.treinoSel; render(); return; }
   if (ds.ex) { exAtual = +ds.ex; tela = 'desafio'; render(); window.scrollTo(0, 0); return; }
@@ -470,6 +580,11 @@ function conectarBanco() {
     if (modo !== 'db') Object.keys(regs).forEach(id => { if (!novos[id] && regs[id].heroi === eu) { novos[id] = regs[id]; salvarPend(id); } });
     regs = novos; modo = 'db'; salvarLocal(); render();
   }, err => { clearTimeout(timer); if (err && err.code === 'permission-denied') semPermissao = true; modo = 'local'; render(); }));
+  pararOuvir.push(db.collection('saude').onSnapshot(snap => {
+    snap.docs.forEach(d => { const r = limparSaude(d.data()); if (r && !pendentes.has('saude_' + d.id)) saude[d.id] = r; });
+    LS.set('treino_saude', saude); if (tela !== 'desafio') render();
+  }, () => {}));
+  setTimeout(() => sincronizarSaude(true), 800);
   pararOuvir.push(db.collection('cargas').onSnapshot(snap => {
     snap.docs.forEach(d => { if (HEROI[d.id]) { const o = {}; Object.entries(d.data() || {}).forEach(([k, v]) => { if (/^[ABC]\d$/.test(k) && typeof v === 'number') o[k] = v; }); if (d.id !== eu || !cargaTimer) cargas[d.id] = o; } });
     salvarLocal(); if (tela !== 'desafio') render();
