@@ -236,7 +236,9 @@ if (NATIVO) {
 const PERM_SAUDE = ['READ_STEPS', 'READ_WORKOUTS', 'READ_TOTAL_CALORIES', 'READ_ACTIVE_CALORIES', 'READ_DISTANCE'];
 let saude = LS.get('treino_saude', {});
 let saudeEstado = Health ? 'verificando' : 'web'; // web | verificando | semapp | semperm | ok | erro
-let saudeSync = 0, saudeRodando = false;
+let saudeSync = 0, saudeRodando = false, saudeHora = '';
+// nenhuma chamada ao Health Connect pode travar o app: desiste depois de 15 s
+const comTempo = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('demorou')), ms || 15000))]);
 const TIPO_TREINO = { WALKING: 'Caminhada', RUNNING_TREADMILL: 'Esteira', RUNNING: 'Corrida', STRENGTH_TRAINING: 'Musculação', WEIGHTLIFTING: 'Musculação',
   BIKING: 'Bike', BIKING_STATIONARY: 'Bike ergométrica', ELLIPTICAL: 'Elíptico', HIKING: 'Trilha', STAIR_CLIMBING_MACHINE: 'Escada', STAIR_CLIMBING: 'Escada',
   HIGH_INTENSITY_INTERVAL_TRAINING: 'HIIT', CALISTHENICS: 'Calistenia', STRETCHING: 'Alongamento', YOGA: 'Yoga', PILATES: 'Pilates', SWIMMING_POOL: 'Natação', DANCING: 'Dança', OTHER: 'Exercício' };
@@ -256,7 +258,7 @@ const kmFmt = m => (m / 1000).toFixed(1).replace('.', ',');
 async function conectarRelogio() {
   if (!Health) return;
   try {
-    const { available } = await Health.isHealthAvailable();
+    const { available } = await comTempo(Health.isHealthAvailable());
     if (!available) { saudeEstado = 'semapp'; render(); try { await Health.showHealthConnectInPlayStore(); } catch (e) {} return; }
     await Health.requestHealthPermissions({ permissions: PERM_SAUDE });
     saudeSync = 0; await sincronizarSaude(true);
@@ -264,7 +266,7 @@ async function conectarRelogio() {
 }
 async function temPermissao() {
   try {
-    const r = await Health.checkHealthPermissions({ permissions: PERM_SAUDE });
+    const r = await comTempo(Health.checkHealthPermissions({ permissions: PERM_SAUDE }));
     const p = (r && r.permissions) || {};
     const ok = {}; if (Array.isArray(p)) p.forEach(o => Object.assign(ok, o)); else Object.assign(ok, p);
     return !!(ok.READ_WORKOUTS && ok.READ_STEPS);
@@ -273,9 +275,9 @@ async function temPermissao() {
 async function sincronizarSaude(forcar) {
   if (!Health || !eu || saudeRodando) return;
   if (!forcar && Date.now() - saudeSync < 60000) return;
-  saudeRodando = true;
+  saudeRodando = true; render();
   try {
-    const { available } = await Health.isHealthAvailable();
+    const { available } = await comTempo(Health.isHealthAvailable());
     if (!available) { saudeEstado = 'semapp'; return; }
     if (!(await temPermissao())) { saudeEstado = 'semperm'; return; }
     const ini = new Date(); ini.setHours(0, 0, 0, 0); ini.setDate(ini.getDate() - 6);
@@ -284,7 +286,7 @@ async function sincronizarSaude(forcar) {
     const dias = {};
     for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, kcalTotais: 0, treinos: [] }; }
     // lê tudo e só o Samsung Health; fica com o maior valor de cada dia
-    const agg1 = async (tipo, origem) => { try { const r = await Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, origem ? { dataOrigins: origem } : {}, q)); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
+    const agg1 = async (tipo, origem) => { try { const r = await comTempo(Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, origem ? { dataOrigins: origem } : {}, q))); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
     const agg = async tipo => {
       const [todos, samsung] = await Promise.all([agg1(tipo), agg1(tipo, ['com.sec.android.app.shealth'])]);
       const m = {}; [...todos, ...samsung].forEach(a => { const k = ymd(new Date(a.startDate)); m[k] = Math.max(m[k] || 0, a.value || 0); });
@@ -294,7 +296,7 @@ async function sincronizarSaude(forcar) {
     (await agg('active-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalAtivas += a.value || 0; });
     (await agg('total-calories')).forEach(a => { const s = ymd(new Date(a.startDate)); if (dias[s]) dias[s].kcalTotais += a.value || 0; });
     let ws = [];
-    try { const r = await Health.queryWorkouts(Object.assign({ includeHeartRate: false, includeRoute: false, includeSteps: false }, q)); ws = (r && r.workouts) || []; } catch (e) {}
+    try { const r = await comTempo(Health.queryWorkouts(Object.assign({ includeHeartRate: false, includeRoute: false, includeSteps: false }, q))); ws = (r && r.workouts) || []; } catch (e) {}
     const vistos = new Set();
     ws.sort((a, b) => (a.startDate < b.startDate ? -1 : 1)).forEach(w => {
       const dt = new Date(w.startDate); const s = ymd(dt); if (!dias[s]) return;
@@ -309,7 +311,7 @@ async function sincronizarSaude(forcar) {
       if (!velho && !novo.passos && !novo.kcalAtivas && !novo.kcalTotais && !novo.treinos.length) return;
       novo.atualizado = Date.now(); saude[id] = novo; salvar('saude_' + id);
     });
-    saudeEstado = 'ok'; saudeSync = Date.now();
+    saudeEstado = 'ok'; saudeSync = Date.now(); const agora = new Date(); saudeHora = pad(agora.getHours()) + ':' + pad(agora.getMinutes());
   } catch (e) { saudeEstado = 'erro'; }
   finally { saudeRodando = false; LS.set('treino_saude', saude); render(); }
 }
@@ -329,7 +331,8 @@ function painelRelogio() {
   if (saudeEstado === 'web') acao = `<div class="mut" style="font-size:13px">O relógio só conecta pelo app instalado (APK).</div>`;
   else if (saudeEstado === 'semperm' || saudeEstado === 'erro') acao = `<button class="btn-sec" data-relogio>CONECTAR MEU RELÓGIO</button>`;
   else if (saudeEstado === 'semapp') acao = `<div class="aviso" style="font-size:14px">Este celular precisa do Health Connect. Instale pela Play Store e toque em conectar de novo.</div><button class="btn-sec" data-relogio>CONECTAR MEU RELÓGIO</button>`;
-  else if (saudeEstado === 'ok') acao = `<button class="mut" data-relogio-sync style="background:none;border:0;font-size:13px;text-decoration:underline;min-height:40px">Atualizar agora</button>`;
+  else if (saudeEstado === 'ok' || saudeEstado === 'verificando') acao = `<div class="row" style="justify-content:space-between;gap:8px"><span class="mut" style="font-size:13px">${saudeRodando ? 'Lendo o relógio…' : saudeHora ? 'Lido às ' + saudeHora : ''}</span><button class="btn-sec" data-relogio-sync ${saudeRodando ? 'disabled' : ''} style="min-height:42px;padding:0 14px;font-size:14px;width:auto">${saudeRodando ? 'ATUALIZANDO…' : 'ATUALIZAR'}</button></div>
+    <div class="mut" style="font-size:12px">O Samsung Health repassa os dados do relógio aos poucos. Abrir o Samsung Health ajuda a chegar mais rápido.</div>`;
   return `<h2>RELÓGIO HOJE</h2>
   <div class="card" style="display:flex;flex-direction:column;gap:12px">${linha(eu || 'C')}<div style="height:3px;background:#0D0B14"></div>${linha(outro(eu || 'C'))}${acao}</div>`;
 }
