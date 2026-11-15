@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '15/11 13:30';
+const VERSAO = '15/11 21:00';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -201,7 +201,7 @@ function comboJuntos() {
 }
 
 // ---------- gravação ----------
-let gravando = false; const pendentes = new Set();
+let gravando = false; const pendentes = new Set(); const tentativas = {};
 function salvarLocal() { LS.set('treino_regs', regs); LS.set('treino_cargas', cargas); }
 function salvar(id) { salvarLocal(); if (!db || semPermissao) return; pendentes.add(id); flush(); }
 async function flush() {
@@ -213,7 +213,7 @@ async function flush() {
     else if (regs[id]) await db.collection('registros').doc(id).set(regs[id]);
   } catch (e) {
     if (e && (e.code === 'permission-denied' || e.code === 'invalid_argument')) { if (!id.startsWith('saude_')) { semPermissao = true; render(); } }
-    else if (e && e.code === 'unavailable') { pendentes.add(id); setTimeout(() => { gravando = false; flush(); }, 1500 + Math.random() * 1500); return; }
+    else if ((tentativas[id] = (tentativas[id] || 0) + 1) <= 5) { pendentes.add(id); setTimeout(() => { gravando = false; flush(); }, 1500 + Math.random() * 1500); return; }
   }
   gravando = false; flush();
 }
@@ -314,7 +314,11 @@ async function sincronizarSaude(forcar) {
     });
     saudeEstado = 'ok'; saudeSync = Date.now(); const agora = new Date(); saudeHora = pad(agora.getHours()) + ':' + pad(agora.getMinutes());
   } catch (e) { saudeEstado = 'erro'; }
-  finally { saudeRodando = false; LS.set('treino_saude', saude); render(); }
+  finally {
+    saudeRodando = false; LS.set('treino_saude', saude); render();
+    const pend = eu && tela !== 'desafio' && !document.querySelector('#modal .modal') && Object.values(regs).find(r => r.heroi === eu && r.data === hoje() && completo(r) && !celebrou[idReg(r.data, r.heroi, r.treino)]);
+    if (pend) { celebrou[idReg(pend.data, pend.heroi, pend.treino)] = true; LS.set('treino_celebrou', celebrou); abrirBau(pend); }
+  }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizarSaude(false); });
 setInterval(() => { if (document.visibilityState === 'visible') sincronizarSaude(true); }, 120000);
@@ -572,8 +576,10 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 function render() {
   const main = document.getElementById('main');
+  const kgAntes = document.getElementById('kg');
+  const foco = kgAntes && document.activeElement === kgAntes ? { v: kgAntes.value, a: kgAntes.selectionStart, b: kgAntes.selectionEnd } : null;
   const avisos = [];
-  if (modo === 'local') avisos.push('Salvando só neste celular por enquanto. O progresso de um não aparece no outro.');
+  if (modo === 'local') avisos.push(fb ? 'Salvando só neste celular por enquanto. O progresso de um não aparece no outro.' : 'Sem internet. Suas marcações ficam salvas aqui e sobem quando a conexão voltar.');
   if (semPermissao) avisos.push('Esta conta não tem permissão para salvar no banco. Confira as regras do Firestore. Por enquanto, salvando só neste celular.');
   if (modo === 'carregando') avisos.push('Conectando…');
   const corpo = tela === 'missoes' ? telaMissoes() : tela === 'desafio' ? telaDesafio() : tela === 'diario' ? telaDiario() : tela === 'chefao' ? telaChefao() : telaTaverna();
@@ -589,6 +595,7 @@ function render() {
     const f = document.getElementById('formLogin'); if (f) f.onsubmit = entrar;
   }
   const kg = document.getElementById('kg');
+  if (kg && foco) { kg.value = foco.v; kg.focus(); try { kg.setSelectionRange(foco.a, foco.b); } catch (e) {} }
   if (kg) kg.addEventListener('input', e => mudarCarga((tabTreino || treinoSugerido()) + Math.min(exAtual, TREINOS[tabTreino || treinoSugerido()].lista.length - 1), e.target.value));
 }
 
@@ -650,6 +657,7 @@ function conectarBanco() {
     const novos = {};
     snap.docs.forEach(d => { const r = limparReg(d.id, d.data()); if (r) novos[d.id] = r; });
     pendentes.forEach(id => { if (regs[id]) novos[id] = regs[id]; });
+    Object.keys(regs).forEach(id => { const l = regs[id], r = novos[id]; if (r && l.heroi === eu && l.atualizado > r.atualizado) { novos[id] = l; salvarPend(id); } });
     if (modo !== 'db') Object.keys(regs).forEach(id => { if (!novos[id] && regs[id].heroi === eu) { novos[id] = regs[id]; salvarPend(id); } });
     regs = novos; modo = 'db'; salvarLocal(); render();
   }, err => { clearTimeout(timer); if (err && err.code === 'permission-denied') semPermissao = true; modo = 'local'; render(); }));
@@ -664,7 +672,9 @@ function conectarBanco() {
   }, () => {}));
 }
 render();
-(async () => {
+let fbCarregando = false;
+async function carregarFirebase() {
+  if (fb || fbCarregando) return; fbCarregando = true;
   try {
     const base = 'https://www.gstatic.com/firebasejs/' + FB_V + '/';
     const [A, U, F] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
@@ -675,17 +685,26 @@ render();
     U.onAuthStateChanged(fb.auth, u => {
       authPronto = true; usuario = u;
       if (u) {
-        eu = (u.email || '').toLowerCase() === EMAIL_LARISSA ? 'L' : 'C';
+        eu = (u.email || '').toLowerCase() === EMAIL_LARISSA ? 'L' : 'C'; LS.set('treino_eu', eu);
         document.getElementById('modal').innerHTML = ''; loginErro = '';
         conectarBanco();
       } else {
-        eu = null; pararOuvir.forEach(fn => { try { fn(); } catch (e) {} }); pararOuvir = []; modo = 'carregando'; render();
+        eu = null; LS.set('treino_eu', null); pararOuvir.forEach(fn => { try { fn(); } catch (e) {} }); pararOuvir = []; modo = 'carregando'; render();
       }
     });
   } catch (e) {
-    authPronto = true; loginErro = 'Não deu para carregar o login. Confira a internet e abra o app de novo.'; render();
+    // sem internet: quem já entrou neste celular continua usando, salvando aqui até a conexão voltar
+    const salvo = LS.get('treino_eu', null);
+    if (!eu && HEROI[salvo]) { eu = salvo; modo = 'local'; document.getElementById('modal').innerHTML = ''; }
+    else if (!eu) { authPronto = true; loginErro = 'Sem internet. Conecte para entrar pela primeira vez.'; }
+    render();
   }
-})();
+  fbCarregando = false;
+}
+carregarFirebase();
+window.addEventListener('online', carregarFirebase);
+setInterval(() => { if (!fb && document.visibilityState === 'visible') carregarFirebase(); }, 30000);
+if ('serviceWorker' in navigator && location.protocol === 'https:' && location.hostname.endsWith('github.io')) navigator.serviceWorker.register('sw.js').catch(() => {});
 function salvarPend(id) { if (!semPermissao) { pendentes.add(id); setTimeout(flush, 0); } }
 </script>
 </body>
