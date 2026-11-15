@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '15/11 13:00';
+const VERSAO = '15/11 13:10';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -546,6 +546,30 @@ function telaLogin() {
 }
 
 const TABS = [['taverna', 'Taverna', 'ic_taverna'], ['missoes', 'Missões', 'ic_missoes'], ['diario', 'Diário', 'ic_diario'], ['chefao', 'Chefão', 'coracao']];
+// ---------- aviso de atualização ----------
+let novaVersao = null, avisoApk = '';
+const APK_URL = 'https://github.com/godofdovah/treino-casal-rpg/releases/download/apk/treino-rpg.apk';
+async function checarVersao() {
+  try {
+    const r = await fetch('https://godofdovah.github.io/treino-casal-rpg/versao.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const v = await r.json();
+    const antes = novaVersao + '|' + avisoApk;
+    novaVersao = v && v.versao && v.versao !== VERSAO ? String(v.versao) : null;
+    avisoApk = NATIVO && v && v.apk && LS.get('treino_apk_visto', '') !== v.apk ? String(v.apk) : '';
+    if (antes !== novaVersao + '|' + avisoApk && tela !== 'desafio') render();
+  } catch (e) {}
+}
+function bannerAtualizacao() {
+  let h = '';
+  if (novaVersao) h += `<div class="missao row" style="justify-content:space-between;gap:10px;padding:12px"><div><div class="gold" style="font-weight:800;font-size:16px">ATUALIZAÇÃO DISPONÍVEL</div><div style="font-size:13px;color:#E4D3B5">Versão ${esc(novaVersao)}</div></div><button class="btn-ouro" data-atualizar style="width:auto;min-height:44px;padding:0 14px;font-size:15px">ATUALIZAR</button></div>`;
+  if (avisoApk) h += `<div class="missao" style="display:flex;flex-direction:column;gap:8px;padding:12px"><div class="gold" style="font-weight:800;font-size:16px">BAIXE O APK NOVO</div><div style="font-size:14px;color:#E4D3B5">${esc(avisoApk)}</div><div class="row" style="gap:8px"><a class="btn-ouro" href="${APK_URL}" target="_blank" rel="noopener" style="flex:1;min-height:44px;font-size:15px;text-decoration:none;display:flex;align-items:center;justify-content:center">BAIXAR</a><button class="btn-sec" data-apk-visto style="width:auto;min-height:44px;font-size:14px">JÁ INSTALEI</button></div></div>`;
+  return h;
+}
+setTimeout(checarVersao, 4000);
+setInterval(() => { if (document.visibilityState === 'visible') checarVersao(); }, 600000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checarVersao(); });
+
 function render() {
   const main = document.getElementById('main');
   const avisos = [];
@@ -553,7 +577,7 @@ function render() {
   if (semPermissao) avisos.push('Esta conta não tem permissão para salvar no banco. Confira as regras do Firestore. Por enquanto, salvando só neste celular.');
   if (modo === 'carregando') avisos.push('Conectando…');
   const corpo = tela === 'missoes' ? telaMissoes() : tela === 'desafio' ? telaDesafio() : tela === 'diario' ? telaDiario() : tela === 'chefao' ? telaChefao() : telaTaverna();
-  main.innerHTML = avisos.map(a => `<div class="aviso">${a}</div>`).join('') + corpo;
+  main.innerHTML = bannerAtualizacao() + avisos.map(a => `<div class="aviso">${a}</div>`).join('') + corpo;
   const navAtual = tela === 'desafio' ? 'missoes' : tela;
   document.getElementById('nav').innerHTML = TABS.map(([k, l, ic]) => `<button data-go="${k}" ${k === navAtual ? 'aria-current="page"' : ''}><img src="img/${ic}.png" alt="">${l}</button>`).join('');
   if (!eu) {
@@ -571,6 +595,8 @@ function render() {
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const ds = b.dataset;
+  if ('atualizar' in ds) { location.replace(location.origin + location.pathname + '?v=' + Date.now()); return; }
+  if ('apkVisto' in ds) { fetch('https://godofdovah.github.io/treino-casal-rpg/versao.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(v => { LS.set('treino_apk_visto', v.apk || ''); avisoApk = ''; render(); }).catch(() => { avisoApk = ''; render(); }); return; }
   if ('esqueci' in ds) { esqueciSenha(); return; }
   if ('relogio' in ds) { conectarRelogio(); return; }
   if ('cardio' in ds) { marcarCardio(tabTreino || treinoSugerido()); return; }
