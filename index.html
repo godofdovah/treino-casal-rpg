@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Treino do Casal — RPG</title>
+<title>Crônicas do Treino</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '15/11 13:10';
+const VERSAO = '15/11 13:20';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -531,7 +531,7 @@ function abrirBau(r) {
 function telaLogin() {
   return `<div class="modal" role="dialog" aria-modal="true" aria-label="Entrar" style="background:#1B1630;align-items:flex-start;padding-top:calc(48px + env(safe-area-inset-top));overflow-y:auto"><div>
     <div class="row" style="gap:6px;justify-content:center"><img src="img/cleiton_corpo.png" alt="" style="width:56px;height:112px;object-fit:contain"><img src="img/larissa_corpo.png" alt="" style="width:56px;height:112px;object-fit:contain"></div>
-    <h1>ENTRAR NA TAVERNA</h1>
+    <h1>CRÔNICAS DO TREINO</h1><div class="sub">Entre na taverna</div>
     ${!authPronto ? '<div class="sub">Conectando…</div>' : `
     <form class="login" id="formLogin" autocomplete="on">
       <label for="lgEmail">E-mail</label>

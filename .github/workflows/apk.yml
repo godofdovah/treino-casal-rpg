@@ -31,13 +31,13 @@ jobs:
           npm init -y >/dev/null
           npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 capacitor-health@8
           cp node_modules/@capacitor/core/dist/capacitor.js www/
-          npx cap init "Treino RPG" com.godofdovah.treinorpg --web-dir www
+          npx cap init "Crônicas do Treino" com.godofdovah.treinorpg --web-dir www
           rm -f capacitor.config.ts
           # o app abre a versão do GitHub Pages (atualiza sozinho); sem internet usa a cópia embutida
           cat > capacitor.config.json <<'JSON'
           {
             "appId": "com.godofdovah.treinorpg",
-            "appName": "Treino RPG",
+            "appName": "Crônicas do Treino",
             "webDir": "www",
             "server": { "url": "https://godofdovah.github.io/treino-casal-rpg/", "errorPath": "index.html" }
           }
@@ -66,4 +66,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete apk -y --cleanup-tag || true
-          gh release create apk treino-rpg.apk --title "Treino RPG (APK)" --notes "Baixe o treino-rpg.apk no celular e instale." --latest
+          gh release create apk treino-rpg.apk --title "Crônicas do Treino (APK)" --notes "Baixe o treino-rpg.apk no celular e instale." --latest
