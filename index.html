@@ -129,6 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
+const VERSAO = '15/11 13:00';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -408,7 +409,7 @@ function telaTaverna() {
   ${painelRelogio()}
   <h2>TROCAR DE MISSÃO</h2>
   <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
-  <button class="mut" data-sair style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Sair da conta${usuario ? ' (' + esc(usuario.email) + ')' : ''}</button>`;
+  <button class="mut" data-sair style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Sair da conta${usuario ? ' (' + esc(usuario.email) + ')' : ''}</button><div class="mut" style="text-align:center;font-size:11px">versão ${VERSAO}</div>`;
 }
 
 function telaMissoes() {
