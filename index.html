@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '15/11 21:00';
+const VERSAO = '16/11 18:10';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -148,7 +148,7 @@ function limparReg(id, d) {
     const a = d.feitos && Array.isArray(d.feitos[i]) ? d.feitos[i] : [];
     feitos[i] = Array.from({ length: nSets(i) }, (_, k) => a[k] === true);
   }
-  return { data: d.data, heroi: d.heroi, treino: d.treino, feitos, cardio: d.cardio === true, atualizado: Number(d.atualizado) || 0 };
+  return { data: d.data, heroi: d.heroi, treino: d.treino, feitos, cardio: d.cardio === true, finalizado: d.finalizado === true, atualizado: Number(d.atualizado) || 0 };
 }
 for (const k of Object.keys(regs)) { const r = limparReg(k, regs[k]); if (r) regs[k] = r; else delete regs[k]; }
 
@@ -368,6 +368,42 @@ function blocoCardio(t) {
     <div style="font-size:13px;color:#E4D3B5">Esteira, bike, escada ou caminhada. Se o relógio registrar, marca sozinho.</div>${linha(eu)}${linha(outro(eu))}</div>`;
 }
 
+function botaoFinalizar(t) {
+  const r = regDe(eu, t);
+  if (r && (r.finalizado || completo(r))) return `<div class="card row" style="justify-content:space-between;gap:8px"><span class="ok" style="font-weight:800;font-size:15px">✔ Treino finalizado</span>${completo(r) ? '' : '<button class="mut" data-reabrir style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Reabrir</button>'}</div>`;
+  return `<button class="btn-ouro" data-finalizar>FINALIZAR TREINO DE HOJE</button>`;
+}
+function pedirFinalizar() {
+  const t = tabTreino || treinoSugerido(); const r = regDe(eu, t);
+  const n = TREINOS[t].lista.length, f = exCount(r);
+  const falta = [];
+  if (f < n) falta.push((n - f) === 1 ? '1 exercício' : (n - f) + ' exercícios');
+  if (CARDIO_EM[t] && !cardioFeito(eu, t)) falta.push('o cardio');
+  const m = document.getElementById('modal');
+  m.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="Finalizar treino"><div>
+    <h1>FINALIZAR TREINO ${t}?</h1>
+    <div style="font-size:17px">${falta.length ? 'Ficou faltando ' + falta.join(' e ') + '. Tudo bem, o que você fez fica salvo e conta XP.' : 'Tudo feito!'}</div>
+    <button class="btn-ouro" id="finSim" style="max-width:280px">FINALIZAR</button>
+    <button class="btn-sec" id="finNao" style="max-width:280px">VOLTAR AO TREINO</button>
+  </div></div>`;
+  document.getElementById('finNao').onclick = () => { m.innerHTML = ''; };
+  document.getElementById('finSim').onclick = () => {
+    const id = idReg(hoje(), eu, t); const rr = regs[id] || novoReg(eu, t);
+    rr.finalizado = true; rr.atualizado = Date.now(); regs[id] = rr; salvar(id);
+    m.innerHTML = '';
+    if (completo(rr) && !celebrou[id]) { celebrou[id] = true; LS.set('treino_celebrou', celebrou); abrirBau(rr); return; }
+    m.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="Treino finalizado"><div>
+      <h1 style="color:#6BD66B">TREINO FINALIZADO!</h1>
+      <div style="font-size:17px">Treino ${t} · ${exCount(rr)}/${TREINOS[t].lista.length} desafios · <b class="gold">+${xpDe(rr)} XP</b></div>
+      <button class="btn-ouro" id="finOk" style="max-width:280px">VOLTAR À TAVERNA</button></div></div>`;
+    document.getElementById('finOk').onclick = () => { m.innerHTML = ''; tela = 'taverna'; render(); window.scrollTo(0, 0); };
+  };
+}
+function reabrir() {
+  const t = tabTreino || treinoSugerido(); const id = idReg(hoje(), eu, t); const r = regs[id];
+  if (!r) return; r.finalizado = false; r.atualizado = Date.now(); salvar(id); render();
+}
+
 function marcar(t, i, k) {
   if (!eu) return;
   const id = idReg(hoje(), eu, t);
@@ -396,7 +432,7 @@ function telaTaverna() {
       <div class="bar" style="margin-top:4px"><div style="width:${s.pct}%;background:#6BD66B"></div></div>
     </div>`; }).join('');
   const prog = ['C', 'L'].map(h => { const r = regDe(h, t); const n = TREINOS[t].lista.length; const f = exCount(r);
-    return `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:800;font-size:15px">${HEROI[h].nome}</span><div class="row" style="gap:4px;flex:1">${Array.from({ length: n }, (_, i) => `<span style="flex:1;height:14px;border:2px solid #0D0B14;background:${i < f ? HEROI[h].cor : (r && r.feitos[i].some(Boolean) ? '#5A4128' : '#2A1D11')}"></span>`).join('')}</div><span style="font-weight:800;font-size:14px;width:30px;text-align:right">${f}/${n}</span></div>`; }).join('');
+    return `<div class="row"><span class="${HEROI[h].css}" style="width:64px;font-weight:800;font-size:15px">${HEROI[h].nome}</span><div class="row" style="gap:4px;flex:1">${Array.from({ length: n }, (_, i) => `<span style="flex:1;height:14px;border:2px solid #0D0B14;background:${exFeito(r, i) ? HEROI[h].cor : (r && r.feitos[i].some(Boolean) ? '#5A4128' : '#2A1D11')}"></span>`).join('')}</div><span style="font-weight:800;font-size:14px;width:30px;text-align:right">${f}/${n}</span></div>${r && r.finalizado && f < n ? `<div style="font-size:12px;color:#E4D3B5;margin:-2px 0 0 72px">${HEROI[h].nome} finalizou o treino</div>` : ''}`; }).join('');
   return `
   <div class="row" style="justify-content:space-between">
     <div><div class="sub">${esc(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}</div><h1>TAVERNA</h1></div>
@@ -408,7 +444,7 @@ function telaTaverna() {
     <div class="row"><div style="width:56px;height:56px;background:#F2C14E;border:4px solid #0D0B14;color:#1B1630;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800">${t}</div>
       <div><div style="font-weight:800;font-size:22px">Treino ${t}</div><div style="font-size:16px;color:#E4D3B5">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios${CARDIO_EM[t] ? ' + cardio' : ''}</div></div></div>
     <div style="display:flex;flex-direction:column;gap:6px">${prog}</div>
-    <button class="btn-ouro" data-go="missoes" data-treino="${t}">INICIAR MISSÃO</button>
+    ${(() => { const r = regDe(eu, t); return r && (r.finalizado || completo(r)) ? `<div class="ok" style="text-align:center;font-weight:800;font-size:16px">✔ VOCÊ FINALIZOU ESTE TREINO</div><button class="btn-sec" data-go="missoes" data-treino="${t}">VER TREINO</button>` : `<button class="btn-ouro" data-go="missoes" data-treino="${t}">${r && marcas(r) ? 'CONTINUAR MISSÃO' : 'INICIAR MISSÃO'}</button>`; })()}
   </div>
   ${painelRelogio()}
   <h2>TROCAR DE MISSÃO</h2>
@@ -434,7 +470,8 @@ function telaMissoes() {
   <div><h1>MISSÃO: TREINO ${t}</h1><div class="sub">${TREINOS[t].grupo} · ${TREINOS[t].lista.length} desafios · 1º com aquecimento${CARDIO_EM[t] ? ' · cardio ' + CARDIO_MIN + ' min' : ''}</div></div>
   <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
   <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>
-  ${blocoCardio(t)}`;
+  ${blocoCardio(t)}
+  ${botaoFinalizar(t)}`;
 }
 
 function telaDesafio() {
@@ -472,7 +509,7 @@ function telaDesafio() {
   ${linha(outro(eu), false)}
   <div class="grid2">
     <button class="btn-sec" data-ex-nav="-1" ${i === 0 ? 'disabled style="opacity:.4"' : ''}><img src="img/seta_esq.png" alt="" style="width:20px;height:17px">Anterior</button>
-    ${i < lista.length - 1 ? `<button class="btn-ouro" data-ex-nav="1">PRÓXIMO <img src="img/seta_dir.png" alt="" style="width:20px;height:17px"></button>` : `<button class="btn-ouro" data-go="taverna">CONCLUIR</button>`}
+    ${i < lista.length - 1 ? `<button class="btn-ouro" data-ex-nav="1">PRÓXIMO <img src="img/seta_dir.png" alt="" style="width:20px;height:17px"></button>` : (() => { const r = regDe(eu, t); return r && (r.finalizado || completo(r)) ? `<button class="btn-ouro" data-go="taverna">CONCLUIR</button>` : `<button class="btn-ouro" data-finalizar>FINALIZAR</button>`; })()}
   </div>`;
 }
 
@@ -486,7 +523,7 @@ function telaDiario() {
   const lista = Object.values(porDia).sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 12).map(x => {
     const tag = h => { const r = x[h]; const n = TREINOS[x.treino].lista.length; const f = exCount(r);
       const st = !r ? 'background:#120E20;color:#8F88A6' : f === n ? `background:${HEROI[h].cor};color:#1B1630` : `background:#120E20;color:${HEROI[h].cor}`;
-      return `<span style="font-weight:800;font-size:13px;padding:5px 6px;border:2px solid #0D0B14;${st}">${h} ${!r ? '—' : f === n ? 'OK' : f + '/' + n}</span>`; };
+      return `<span style="font-weight:800;font-size:13px;padding:5px 6px;border:2px solid #0D0B14;${st}">${h} ${!r ? '—' : f === n ? 'OK' : f + '/' + n}${r && r.finalizado && f < n ? ' ✔' : ''}</span>`; };
     return `<div class="card row" style="padding:8px 10px"><div style="flex:1"><div style="font-weight:800;font-size:16px">Treino ${x.treino} · ${TREINOS[x.treino].grupo}</div><div class="mut" style="font-size:14px">${dataBonita(x.data)}</div></div>${tag('C')}${tag('L')}</div>`;
   }).join('') || `<div class="card mut" style="font-size:16px">Nenhuma missão registrada ainda. Marque as séries no treino de hoje.</div>`;
   const combo = comboJuntos();
@@ -604,6 +641,8 @@ document.addEventListener('click', e => {
   const ds = b.dataset;
   if ('atualizar' in ds) { location.replace(location.origin + location.pathname + '?v=' + Date.now()); return; }
   if ('apkVisto' in ds) { fetch('https://godofdovah.github.io/treino-casal-rpg/versao.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(v => { LS.set('treino_apk_visto', v.apk || ''); avisoApk = ''; render(); }).catch(() => { avisoApk = ''; render(); }); return; }
+  if ('finalizar' in ds) { pedirFinalizar(); return; }
+  if ('reabrir' in ds) { reabrir(); return; }
   if ('esqueci' in ds) { esqueciSenha(); return; }
   if ('relogio' in ds) { conectarRelogio(); return; }
   if ('cardio' in ds) { marcarCardio(tabTreino || treinoSugerido()); return; }
