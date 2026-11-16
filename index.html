@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '16/11 18:10';
+const VERSAO = '16/11 19:40';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -201,19 +201,21 @@ function comboJuntos() {
 }
 
 // ---------- gravação ----------
-let gravando = false; const pendentes = new Set(); const tentativas = {};
+let gravando = false; const pendentes = new Set(); const tentativas = {}; let ultimaGravacao = '';
+const limite = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ code: 'demorou' }), ms))]);
 function salvarLocal() { LS.set('treino_regs', regs); LS.set('treino_cargas', cargas); }
 function salvar(id) { salvarLocal(); if (!db || semPermissao) return; pendentes.add(id); flush(); }
 async function flush() {
   if (gravando || !pendentes.size) return;
   const id = pendentes.values().next().value; pendentes.delete(id); gravando = true;
   try {
-    if (id.startsWith('carga_')) await db.collection('cargas').doc(id.slice(6)).set(cargas[id.slice(6)] || {});
-    else if (id.startsWith('saude_')) { const k = id.slice(6); if (saude[k]) await db.collection('saude').doc(k).set(saude[k]); }
-    else if (regs[id]) await db.collection('registros').doc(id).set(regs[id]);
+    if (id.startsWith('carga_')) await limite(db.collection('cargas').doc(id.slice(6)).set(cargas[id.slice(6)] || {}), 20000);
+    else if (id.startsWith('saude_')) { const k = id.slice(6); if (saude[k]) await limite(db.collection('saude').doc(k).set(saude[k]), 20000); }
+    else if (regs[id]) await limite(db.collection('registros').doc(id).set(regs[id]), 20000);
+    delete tentativas[id]; const ag = new Date(); ultimaGravacao = pad(ag.getHours()) + ':' + pad(ag.getMinutes());
   } catch (e) {
     if (e && (e.code === 'permission-denied' || e.code === 'invalid_argument')) { if (!id.startsWith('saude_')) { semPermissao = true; render(); } }
-    else if ((tentativas[id] = (tentativas[id] || 0) + 1) <= 5) { pendentes.add(id); setTimeout(() => { gravando = false; flush(); }, 1500 + Math.random() * 1500); return; }
+    else { tentativas[id] = (tentativas[id] || 0) + 1; pendentes.add(id); setTimeout(() => { gravando = false; flush(); }, Math.min(30000, 2000 * tentativas[id])); return; }
   }
   gravando = false; flush();
 }
@@ -449,7 +451,7 @@ function telaTaverna() {
   ${painelRelogio()}
   <h2>TROCAR DE MISSÃO</h2>
   <div class="tabs">${['A', 'B', 'C'].map(k => `<button class="tab" aria-pressed="${k === t}" data-treino-sel="${k}">${k} · ${TREINOS[k].grupo.split(' ')[0]}</button>`).join('')}</div>
-  <button class="mut" data-sair style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Sair da conta${usuario ? ' (' + esc(usuario.email) + ')' : ''}</button><div class="mut" style="text-align:center;font-size:11px">versão ${VERSAO}</div>`;
+  <button class="mut" data-sair style="background:none;border:0;font-size:14px;text-decoration:underline;min-height:44px">Sair da conta${usuario ? ' (' + esc(usuario.email) + ')' : ''}</button><div class="mut" style="text-align:center;font-size:11px">versão ${VERSAO} · ${modo === 'db' ? (pendentes.size || gravando ? 'enviando ' + (pendentes.size + (gravando ? 1 : 0)) + '…' : 'sincronizado' + (ultimaGravacao ? ' ' + ultimaGravacao : '')) : modo === 'local' ? 'sem conexão com o banco' : 'conectando'}</div>`;
 }
 
 function telaMissoes() {
@@ -691,6 +693,7 @@ function conectarBanco() {
   pararOuvir.forEach(fn => { try { fn(); } catch (e) {} }); pararOuvir = [];
   modo = 'carregando'; semPermissao = false; render();
   const timer = setTimeout(() => { if (modo === 'carregando') { modo = 'local'; render(); } }, 12000);
+  // se cair para local por demora, a primeira resposta do banco volta para o modo normal (o listener continua ativo)
   pararOuvir.push(db.collection('registros').onSnapshot(snap => {
     clearTimeout(timer);
     const novos = {};
@@ -699,7 +702,7 @@ function conectarBanco() {
     Object.keys(regs).forEach(id => { const l = regs[id], r = novos[id]; if (r && l.heroi === eu && l.atualizado > r.atualizado) { novos[id] = l; salvarPend(id); } });
     if (modo !== 'db') Object.keys(regs).forEach(id => { if (!novos[id] && regs[id].heroi === eu) { novos[id] = regs[id]; salvarPend(id); } });
     regs = novos; modo = 'db'; salvarLocal(); render();
-  }, err => { clearTimeout(timer); if (err && err.code === 'permission-denied') semPermissao = true; modo = 'local'; render(); }));
+  }, err => { clearTimeout(timer); if (err && err.code === 'permission-denied') semPermissao = true; modo = 'local'; render(); if (usuario) setTimeout(() => { if (usuario && modo !== 'db') conectarBanco(); }, 15000); }));
   pararOuvir.push(db.collection('saude').onSnapshot(snap => {
     snap.docs.forEach(d => { const r = limparSaude(d.data()); if (r && !pendentes.has('saude_' + d.id)) saude[d.id] = r; });
     LS.set('treino_saude', saude); if (tela !== 'desafio') render();
@@ -718,7 +721,7 @@ async function carregarFirebase() {
     const base = 'https://www.gstatic.com/firebasejs/' + FB_V + '/';
     const [A, U, F] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
     const app = A.initializeApp(FB_CONFIG);
-    fb = { auth: U.getAuth(app), db: F.getFirestore(app), signInWithEmailAndPassword: U.signInWithEmailAndPassword, signOut: U.signOut,
+    fb = { auth: U.getAuth(app), db: F.initializeFirestore(app, { experimentalForceLongPolling: true }), signInWithEmailAndPassword: U.signInWithEmailAndPassword, signOut: U.signOut,
       sendPasswordResetEmail: U.sendPasswordResetEmail, setDoc: F.setDoc, doc: F.doc, collection: F.collection, onSnapshot: F.onSnapshot };
     db = criarDb(fb);
     U.onAuthStateChanged(fb.auth, u => {
@@ -741,7 +744,7 @@ async function carregarFirebase() {
   fbCarregando = false;
 }
 carregarFirebase();
-window.addEventListener('online', carregarFirebase);
+window.addEventListener('online', () => { carregarFirebase(); gravando = false; flush(); });
 setInterval(() => { if (!fb && document.visibilityState === 'visible') carregarFirebase(); }, 30000);
 if ('serviceWorker' in navigator && location.protocol === 'https:' && location.hostname.endsWith('github.io')) navigator.serviceWorker.register('sw.js').catch(() => {});
 function salvarPend(id) { if (!semPermissao) { pendentes.add(id); setTimeout(flush, 0); } }
