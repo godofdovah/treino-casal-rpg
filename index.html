@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '16/11 19:40';
+const VERSAO = '16/11 22:50';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -283,11 +283,11 @@ async function sincronizarSaude(forcar) {
     const { available } = await comTempo(Health.isHealthAvailable());
     if (!available) { saudeEstado = 'semapp'; return; }
     if (!(await temPermissao())) { saudeEstado = 'semperm'; return; }
-    const ini = new Date(); ini.setHours(0, 0, 0, 0); ini.setDate(ini.getDate() - 6);
+    const ini = new Date(); ini.setHours(0, 0, 0, 0); ini.setDate(ini.getDate() - 39);
     const fim = new Date(); fim.setHours(23, 59, 59, 999);
     const q = { startDate: ini.toISOString(), endDate: fim.toISOString() };
     const dias = {};
-    for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, kcalTotais: 0, treinos: [] }; }
+    for (let k = 0; k < 40; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); dias[s] = { data: s, heroi: eu, passos: 0, kcalAtivas: 0, kcalTotais: 0, treinos: [] }; }
     // lê tudo e só o Samsung Health; fica com o maior valor de cada dia
     const agg1 = async (tipo, origem) => { try { const r = await comTempo(Health.queryAggregated(Object.assign({ dataType: tipo, bucket: 'day' }, origem ? { dataOrigins: origem } : {}, q))); return (r && r.aggregatedData) || []; } catch (e) { return []; } };
     const agg = async tipo => {
@@ -325,28 +325,66 @@ async function sincronizarSaude(forcar) {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizarSaude(false); });
 setInterval(() => { if (document.visibilityState === 'visible') sincronizarSaude(true); }, 120000);
 
+let gPer = 'dia', gOff = 0;
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const nf = n => Math.round(n).toLocaleString('pt-BR');
+function somaDias(h, dias) {
+  const t = { passos: 0, kcal: 0, kcalTreino: 0, n: 0, m: 0, comDado: 0 };
+  dias.forEach(s => { const r = saudeDe(h, s); if (!r) return; t.comDado++; t.passos += r.passos; t.kcal += r.kcalTotais; r.treinos.forEach(w => { t.kcalTreino += w.kcal; t.m += w.m; t.n++; }); });
+  return t;
+}
 function painelRelogio() {
-  const linha = h => {
-    const r = saudeDe(h); const kt = kcalTreinos(r);
-    const treinos = r && r.treinos.length ? r.treinos.map(t => `<div class="row" style="justify-content:space-between;font-size:15px;gap:6px"><span>${esc(t.tipo)} <span class="mut" style="font-size:13px">${esc(t.inicio)} · ${t.min} min${t.m >= 100 ? ' · ' + kmFmt(t.m) + ' km' : ''}</span></span><b class="gold" style="white-space:nowrap">${t.kcal} kcal</b></div>`).join('')
-      : `<div class="mut" style="font-size:14px">Nenhum treino no relógio hoje</div>`;
-    return `<div style="display:flex;flex-direction:column;gap:5px">
-      <div class="row" style="justify-content:space-between"><span class="${HEROI[h].css}" style="font-weight:800;font-size:16px">${HEROI[h].nome}</span>
-      <span style="font-size:14px"><b>${r ? r.passos.toLocaleString('pt-BR') : 0}</b> <span class="mut">passos</span> · <b class="gold">${kt}</b> <span class="mut">kcal treino</span></span></div>${treinos}</div>`;
-  };
+  const hj = hoje();
+  let titulo = '', corpo = '', podeAvancar = gOff > 0;
+  if (gPer === 'dia') {
+    const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - gOff); const s = ymd(d);
+    titulo = gOff === 0 ? 'Hoje' : gOff === 1 ? 'Ontem' : dataBonita(s);
+    const linha = h => {
+      const r = saudeDe(h, s); const kt = kcalTreinos(r);
+      const treinos = r && r.treinos.length ? r.treinos.map(t => `<div class="row" style="justify-content:space-between;font-size:14px;gap:6px"><span>${esc(t.tipo)} <span class="mut" style="font-size:12px">${esc(t.inicio)} · ${t.min} min${t.m >= 100 ? ' · ' + kmFmt(t.m) + ' km' : ''}</span></span><b class="gold" style="white-space:nowrap">${t.kcal} kcal</b></div>`).join('')
+        : `<div class="mut" style="font-size:13px">Nenhum treino no relógio</div>`;
+      return `<div style="display:flex;flex-direction:column;gap:5px">
+        <span class="${HEROI[h].css}" style="font-weight:800;font-size:16px">${HEROI[h].nome}</span>
+        <div class="grid2" style="gap:6px"><div class="painel" style="padding:4px 8px"><b style="font-size:18px">${r ? nf(r.passos) : '—'}</b><div class="mut" style="font-size:12px">passos</div></div><div class="painel" style="padding:4px 8px"><b class="gold" style="font-size:18px">${r && r.kcalTotais ? nf(r.kcalTotais) : '—'}</b><div class="mut" style="font-size:12px">kcal gastas no dia</div></div></div>
+        ${kt ? `<div style="font-size:13px" class="mut">Treinos: <b class="gold">${nf(kt)} kcal</b></div>` : ''}${treinos}</div>`;
+    };
+    corpo = `${linha(eu || 'C')}<div style="height:3px;background:#0D0B14"></div>${linha(outro(eu || 'C'))}`;
+  } else {
+    let dias = [];
+    if (gPer === 'semana') {
+      const ini = inicioSemana(); ini.setDate(ini.getDate() - 7 * gOff);
+      for (let k = 0; k < 7; k++) { const d = new Date(ini); d.setDate(ini.getDate() + k); const s = ymd(d); if (s <= hj) dias.push(s); }
+      const fim = new Date(ini); fim.setDate(ini.getDate() + 6);
+      titulo = gOff === 0 ? 'Esta semana' : gOff === 1 ? 'Semana passada' : pad(ini.getDate()) + '/' + pad(ini.getMonth() + 1) + ' a ' + pad(fim.getDate()) + '/' + pad(fim.getMonth() + 1);
+    } else {
+      const m = new Date(); m.setDate(1); m.setHours(12, 0, 0, 0); m.setMonth(m.getMonth() - gOff);
+      const mes = m.getMonth();
+      for (const d = new Date(m); d.getMonth() === mes; d.setDate(d.getDate() + 1)) { const s = ymd(d); if (s <= hj) dias.push(s); }
+      titulo = MESES[mes][0].toUpperCase() + MESES[mes].slice(1) + ' ' + m.getFullYear();
+    }
+    const cel = (h, s) => { const r = saudeDe(h, s); return r ? `<div style="text-align:right"><b>${nf(r.passos)}</b> <span class="mut" style="font-size:11px">p</span><br><b class="gold">${r.kcalTotais ? nf(r.kcalTotais) : '—'}</b> <span class="mut" style="font-size:11px">kcal</span></div>` : `<div class="mut" style="text-align:right">—</div>`; };
+    const grade = 'display:grid;grid-template-columns:78px 1fr 1fr;gap:6px;align-items:center;font-size:14px';
+    const lista = dias.slice().reverse().filter(s => gPer === 'semana' || saudeDe('C', s) || saudeDe('L', s))
+      .map(s => `<div style="${grade};padding:5px 0;border-top:2px solid #0D0B14"><span style="font-size:13px">${dataBonita(s)}</span>${cel(eu || 'C', s)}${cel(outro(eu || 'C'), s)}</div>`).join('')
+      || `<div class="mut" style="font-size:14px">Sem dados do relógio nesse período.</div>`;
+    const tot = h => { const t = somaDias(h, dias); return `<div style="text-align:right;font-size:13px"><b>${nf(t.passos)}</b> <span class="mut">passos</span><br><b class="gold">${nf(t.kcal)}</b> <span class="mut">kcal</span><br><span class="mut">média ${t.comDado ? nf(t.kcal / t.comDado) : 0} kcal/dia</span><br><span class="mut">${t.n} treinos · ${nf(t.kcalTreino)} kcal</span></div>`; };
+    corpo = `<div style="${grade}"><span></span><span class="${HEROI[eu || 'C'].css}" style="font-weight:800;text-align:right">${HEROI[eu || 'C'].nome}</span><span class="${HEROI[outro(eu || 'C')].css}" style="font-weight:800;text-align:right">${HEROI[outro(eu || 'C')].nome}</span></div>
+      <div style="${grade};background:#120E20;padding:6px;border:3px solid #0D0B14"><span class="gold" style="font-weight:800">TOTAL</span>${tot(eu || 'C')}${tot(outro(eu || 'C'))}</div>
+      <div>${lista}</div>`;
+  }
   let acao = '';
   if (saudeEstado === 'web') acao = `<div class="mut" style="font-size:13px">O relógio só conecta pelo app instalado (APK).</div>`;
   else if (saudeEstado === 'semperm' || saudeEstado === 'erro') acao = `<button class="btn-sec" data-relogio>CONECTAR MEU RELÓGIO</button>`;
   else if (saudeEstado === 'semapp') acao = `<div class="aviso" style="font-size:14px">Este celular precisa do Health Connect. Instale pela Play Store e toque em conectar de novo.</div><button class="btn-sec" data-relogio>CONECTAR MEU RELÓGIO</button>`;
-  else if (saudeEstado === 'ok' || saudeEstado === 'verificando') acao = `<div class="row" style="justify-content:space-between;gap:8px"><span class="mut" style="font-size:13px">${saudeRodando ? 'Lendo o relógio…' : saudeHora ? 'Lido às ' + saudeHora : ''}</span><button class="btn-sec" data-relogio-sync ${saudeRodando ? 'disabled' : ''} style="min-height:42px;padding:0 14px;font-size:14px;width:auto">${saudeRodando ? 'ATUALIZANDO…' : 'ATUALIZAR'}</button></div>
-    <div class="mut" style="font-size:12px">O Samsung Health repassa os dados do relógio aos poucos. Abrir o Samsung Health ajuda a chegar mais rápido.</div>`;
-  return `<h2>RELÓGIO HOJE</h2>
-  <div class="card" style="display:flex;flex-direction:column;gap:12px">${linha(eu || 'C')}<div style="height:3px;background:#0D0B14"></div>${linha(outro(eu || 'C'))}${acao}</div>`;
-}
-function semanaRelogio() {
-  const ini = ymd(inicioSemana()); const t = { C: { kcal: 0, m: 0, n: 0, passos: 0 }, L: { kcal: 0, m: 0, n: 0, passos: 0 } };
-  Object.values(saude).forEach(r => { if (r.data >= ini) { const x = t[r.heroi]; x.passos += r.passos; r.treinos.forEach(w => { x.kcal += w.kcal; x.m += w.m; x.n++; }); } });
-  return `<h2>RELÓGIO NA SEMANA</h2><div class="card" style="display:flex;flex-direction:column;gap:8px">${['C', 'L'].map(h => `<div class="row" style="justify-content:space-between;font-size:15px"><span class="${HEROI[h].css}" style="font-weight:800;width:70px">${HEROI[h].nome}</span><span>${t[h].n} treinos · <b class="gold">${t[h].kcal.toLocaleString('pt-BR')} kcal</b> · ${kmFmt(t[h].m)} km</span></div>`).join('')}</div>`;
+  else if (saudeEstado === 'ok' || saudeEstado === 'verificando') acao = `<div class="row" style="justify-content:space-between;gap:8px"><span class="mut" style="font-size:13px">${saudeRodando ? 'Lendo o relógio…' : saudeHora ? 'Lido às ' + saudeHora : ''}</span><button class="btn-sec" data-relogio-sync ${saudeRodando ? 'disabled' : ''} style="min-height:42px;padding:0 14px;font-size:14px;width:auto">${saudeRodando ? 'ATUALIZANDO…' : 'ATUALIZAR'}</button></div>`;
+  const aba = (k, l) => `<button class="tab" aria-pressed="${gPer === k}" data-gper="${k}">${l}</button>`;
+  return `<h2>GASTOS DO RELÓGIO</h2>
+  <div class="tabs">${aba('dia', 'Dia')}${aba('semana', 'Semana')}${aba('mes', 'Mês')}</div>
+  <div class="card" style="display:flex;flex-direction:column;gap:12px">
+    <div class="row" style="justify-content:space-between"><button class="btn-sec" data-goff="1" aria-label="Anterior" style="width:44px;min-height:40px;padding:0"><img src="img/seta_esq.png" alt="" style="width:18px;height:15px"></button>
+      <b style="font-size:16px">${titulo}</b>
+      <button class="btn-sec" data-goff="-1" aria-label="Próximo" ${podeAvancar ? '' : 'disabled style="opacity:.3;width:44px;min-height:40px;padding:0"'} style="width:44px;min-height:40px;padding:0"><img src="img/seta_dir.png" alt="" style="width:18px;height:15px"></button></div>
+    ${corpo}${acao}</div>`;
 }
 
 function marcarCardio(t) {
@@ -429,7 +467,7 @@ function telaTaverna() {
   const herois = ['C', 'L'].map(h => { const s = stats(h); return `
     <div class="painel" style="padding:8px">
       <div class="row">${avatar(h, 52)}<div style="min-width:0"><div style="font-weight:800;font-size:17px">${HEROI[h].nome}${h === eu ? ' <span class="mut" style="font-size:13px">(você)</span>' : ''}</div><div class="mut" style="font-size:14px">${HEROI[h].classe}</div></div></div>
-      ${(() => { const r = saudeDe(h); return `<div style="display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:14px"><span><b>${r ? r.passos.toLocaleString('pt-BR') : '—'}</b> <span class="mut">passos</span></span><span><b class="gold">${r && r.kcalTotais ? r.kcalTotais.toLocaleString('pt-BR') : '—'}</b> <span class="mut">kcal no dia</span></span></div>`; })()}
+      ${(() => { const r = saudeDe(h); return `<div style="display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:14px"><span><b>${r ? r.passos.toLocaleString('pt-BR') : '—'}</b> <span class="mut">passos hoje</span></span><span><b class="gold">${r && r.kcalTotais ? r.kcalTotais.toLocaleString('pt-BR') : '—'}</b> <span class="mut">kcal hoje</span></span></div>`; })()}
       <div class="row gold" style="justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px"><span>NV ${s.nivel}</span><span>${s.xp} XP</span></div>
       <div class="bar" style="margin-top:4px"><div style="width:${s.pct}%;background:#6BD66B"></div></div>
     </div>`; }).join('');
@@ -533,7 +571,6 @@ function telaDiario() {
   <div><div class="sub">Esta semana</div><h1>DIÁRIO DE AVENTURA</h1></div>
   <div class="missao row"><img src="img/chama.png" alt="" style="width:36px;height:44px;object-fit:contain"><div><div class="gold" style="font-weight:800;font-size:18px">COMBO x${combo}</div><div style="font-size:16px">${combo === 1 ? '1 dia' : combo + ' dias'} seguidos treinando em dupla</div></div></div>
   <div class="card" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:10px 6px">${dias}</div>
-  ${semanaRelogio()}
   <h2>REGISTROS</h2>
   <div style="display:flex;flex-direction:column;gap:6px">${lista}</div>`;
 }
@@ -645,6 +682,8 @@ document.addEventListener('click', e => {
   if ('apkVisto' in ds) { fetch('https://godofdovah.github.io/treino-casal-rpg/versao.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(v => { LS.set('treino_apk_visto', v.apk || ''); avisoApk = ''; render(); }).catch(() => { avisoApk = ''; render(); }); return; }
   if ('finalizar' in ds) { pedirFinalizar(); return; }
   if ('reabrir' in ds) { reabrir(); return; }
+  if (ds.gper) { gPer = ds.gper; gOff = 0; render(); return; }
+  if (ds.goff) { gOff = Math.max(0, gOff + Number(ds.goff)); render(); return; }
   if ('esqueci' in ds) { esqueciSenha(); return; }
   if ('relogio' in ds) { conectarRelogio(); return; }
   if ('cardio' in ds) { marcarCardio(tabTreino || treinoSugerido()); return; }
