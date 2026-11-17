@@ -1,5 +1,5 @@
 // Guarda uma cópia do app para abrir sem internet. Sempre tenta a internet primeiro.
-const CACHE = 'duo-v1';
+const CACHE = 'duo-v2';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
@@ -11,7 +11,7 @@ self.addEventListener('fetch', e => {
   const fonte = u.hostname === 'fonts.googleapis.com' || u.hostname === 'fonts.gstatic.com';
   if (!nosso && !firebase && !fonte) return;
   e.respondWith(
-    fetch(req).then(res => {
+    fetch(req, nosso ? { cache: 'no-cache' } : undefined).then(res => {
       if (res && (res.ok || res.type === 'opaque')) { const copia = res.clone(); caches.open(CACHE).then(c => c.put(req, copia)).catch(() => {}); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: req.mode === 'navigate' }).then(r => r || Promise.reject(new Error('offline'))))

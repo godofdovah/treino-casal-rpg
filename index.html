@@ -129,7 +129,7 @@ const FB_CONFIG = {
   messagingSenderId: '526983877725',
   appId: '1:526983877725:web:4500b600c89e98bda369b4'
 };
-const VERSAO = '16/11 22:50';
+const VERSAO = '16/11 22:55';
 const EMAIL_LARISSA = 'larissapereira1991@gmail.com';
 const FB_V = '10.14.1';
 let fb = null, usuario = null, authPronto = false, loginErro = '', loginEnviando = false;
@@ -244,7 +244,7 @@ let saudeSync = 0, saudeRodando = false, saudeHora = '';
 const comTempo = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('demorou')), ms || 15000))]);
 const TIPO_TREINO = { WALKING: 'Caminhada', RUNNING_TREADMILL: 'Esteira', RUNNING: 'Corrida', STRENGTH_TRAINING: 'Musculação', WEIGHTLIFTING: 'Musculação',
   BIKING: 'Bike', BIKING_STATIONARY: 'Bike ergométrica', ELLIPTICAL: 'Elíptico', HIKING: 'Trilha', STAIR_CLIMBING_MACHINE: 'Escada', STAIR_CLIMBING: 'Escada',
-  HIGH_INTENSITY_INTERVAL_TRAINING: 'HIIT', CALISTHENICS: 'Calistenia', STRETCHING: 'Alongamento', YOGA: 'Yoga', PILATES: 'Pilates', SWIMMING_POOL: 'Natação', DANCING: 'Dança', OTHER: 'Exercício' };
+  HIGH_INTENSITY_INTERVAL_TRAINING: 'HIIT', CALISTHENICS: 'Calistenia', STRETCHING: 'Alongamento', YOGA: 'Yoga', PILATES: 'Pilates', SWIMMING_POOL: 'Natação', DANCING: 'Dança', OTHER: 'Treino', EXERCISE_CLASS: 'Aula', WEIGHTLIFTING: 'Musculação' };
 const idSaude = (data, h) => data + '_' + h;
 function limparSaude(d) {
   if (!d || typeof d !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || !HEROI[d.heroi]) return null;
